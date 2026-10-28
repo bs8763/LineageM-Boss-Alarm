@@ -11,7 +11,8 @@ export async function handleBossMessage(message,service,env){
  const reply=content=>message.reply({content,allowedMentions:{parse:[],repliedUser:false}});
  const permissions=message.member?.permissionsIn(message.channel);
  const role=env.DISCORD_COMMAND_ROLE_ID;
- if(!permissions?.has([PermissionFlagsBits.ViewChannel,PermissionFlagsBits.SendMessages])||(role&&!permissions.has(PermissionFlagsBits.Administrator)&&!message.member.roles?.cache.has(role))){await reply('보스 명령 권한이 없습니다. 저장하지 않았습니다.');return;}
+ const sendPermission=message.channel.isThread?.()?PermissionFlagsBits.SendMessagesInThreads:PermissionFlagsBits.SendMessages;
+ if(!permissions?.has([PermissionFlagsBits.ViewChannel,sendPermission])||(role&&!permissions.has(PermissionFlagsBits.Administrator)&&!message.member.roles?.cache.has(role))){await reply('보스 명령 권한이 없습니다. 저장하지 않았습니다.');return;}
  if(!Number.isFinite(message.createdTimestamp)||Date.now()-message.createdTimestamp>90000||message.createdTimestamp>Date.now()+60000){await reply('오래된 메시지는 처리하지 않습니다. 새 메시지로 입력해 주세요.');return;}
  let result;
  try{result=await service.messageAction({messageId:message.id,id:parsed.name,action:parsed.action,time:parsed.action==='cut'?new Date(message.createdTimestamp).toISOString():undefined,actor:`discord:${message.author.id}`});}
