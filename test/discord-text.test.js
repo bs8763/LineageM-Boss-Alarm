@@ -33,3 +33,9 @@ test('ordinary chat, bots, webhooks, DMs and other channels never call the store
 test('reply failures after a commit cannot duplicate a stored action',()=>fixture(async(service)=>{
  const m=message('데스 컷',undefined,{reply:async()=>{throw Error('network');}});await handleBossMessage(m,service,env);await handleBossMessage(m,service,env);const s=await service.read();assert.equal(s.history.filter(e=>e.name==='데스'&&e.action==='cut').length,1);
 }));
+
+test('private thread commands use SendMessagesInThreads permission',()=>fixture(async(service)=>{
+ const {PermissionFlagsBits:P}=await import('discord.js');
+ const m=message('서드 컷',undefined,{channel:{isThread:()=>true},member:{permissionsIn:()=>({has:flags=>Array.isArray(flags)&&flags.includes(P.ViewChannel)&&flags.includes(P.SendMessagesInThreads)})}});
+ await handleBossMessage(m,service,env);assert.equal((await service.read()).bosses[0].lastAction,'cut');
+}));
