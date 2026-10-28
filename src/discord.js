@@ -1,3 +1,4 @@
+import {handleBossMessage} from './discord-text.js';
 import {Client,GatewayIntentBits,Events,SlashCommandBuilder,REST,Routes,PermissionFlagsBits} from 'discord.js';
 const choices=['컷','멍','예약','초기화'];
 export function commandDefinitions(testMode=false){return [
@@ -19,7 +20,10 @@ export async function startDiscord(service,env=process.env){
  if(!env.DISCORD_BOT_TOKEN)return {ready:()=>false,stop:async()=>{}};
  const testMode=env.DISCORD_TEST_MODE==='true';
  if(testMode&&(!env.DISCORD_GUILD_ID||!env.DISCORD_CHANNEL_ID))throw Error('검증 봇은 서버·채널 ID가 모두 필요합니다');
- const client=new Client({intents:[GatewayIntentBits.Guilds]});const admins=new Set((env.DISCORD_ADMIN_IDS||'').split(',').filter(Boolean));
+ const textEnabled=env.DISCORD_TEXT_COMMANDS==='true';
+ if(textEnabled&&(!env.DISCORD_GUILD_ID||!env.DISCORD_TEXT_CHANNEL_ID))throw Error('일반 채팅 명령은 서버·전용 채널 ID가 필요합니다');
+ const client=new Client({intents:[GatewayIntentBits.Guilds,...(textEnabled?[GatewayIntentBits.GuildMessages,GatewayIntentBits.MessageContent]:[])]});const admins=new Set((env.DISCORD_ADMIN_IDS||'').split(',').filter(Boolean));
+ if(textEnabled)client.on(Events.MessageCreate,message=>handleBossMessage(message,service,env).catch(()=>console.error('Discord text handler failed')));
  let publishing=false;
  const allowed=i=>i.inGuild()&&Boolean(env.DISCORD_GUILD_ID)&&i.guildId===env.DISCORD_GUILD_ID;
  client.on(Events.InteractionCreate,async i=>{

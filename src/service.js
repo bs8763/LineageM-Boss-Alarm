@@ -4,6 +4,18 @@ export class Service {
  async tick(){const bosses=await this.store.schedule(),now=Date.now();const due=bosses.some(b=>{if(!b.time)return false;const t=Date.parse(b.time);return ((b.intervalMinutes||b.fixedKstMinutes.length)&&now>=t+30*60000)||[10,5,0].some(m=>now>=t-m*60000&&now-(t-m*60000)<=90000);});if(due)await this.read();}
  async read(){return this.store.transaction(s=>{advance(s);queueAlarms(s);return s;},{reason:'auto-advance'});}
  async action(data){return this.store.transaction(s=>{advance(s);return act(s,data);},{reason:data.action});}
+ async messageAction({messageId,...data}){
+  if(!/^\d{16,22}$/.test(messageId||''))throw new DomainError('메시지 ID 오류');
+  return this.store.transaction(s=>{
+   s.discordMessageReceipts??=[];
+   const receipt=s.discordMessageReceipts.find(x=>x.id===messageId);
+   if(receipt)return {boss:receipt.boss,duplicate:true};
+   advance(s);const boss=act(s,data);
+   s.discordMessageReceipts.push({id:messageId,boss:structuredClone(boss)});
+   s.discordMessageReceipts=s.discordMessageReceipts.slice(-1000);
+   return {boss,duplicate:false};
+  },{reason:'discord-text'});
+ }
  async configure(id,data,actor){return this.store.transaction(s=>configure(s,id,data,actor),{backup:true,reason:'configure'});}
  async reset(actor){return this.store.transaction(s=>reset(s,actor),{backup:true,reason:'reset'});}
  async restore(raw,actor){return this.store.transaction(s=>restore(s,raw,actor),{backup:true,reason:'restore'});}
