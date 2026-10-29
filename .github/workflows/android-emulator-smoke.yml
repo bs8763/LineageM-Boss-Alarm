@@ -50,10 +50,7 @@ jobs:
             adb shell screencap -p /sdcard/boss-smoke.png
             adb pull /sdcard/boss-smoke.png boss-smoke.png
             test -s app-pid.txt
-            if grep -Eq 'FATAL EXCEPTION|Process: com.bs8763.bossalarm' crash-log.txt; then
-              echo "Crash log indicates app failure"
-              exit 1
-            fi
+            ! grep -Eq 'FATAL EXCEPTION|Process: com.bs8763.bossalarm' crash-log.txt
       - name: Upload diagnostics (no secrets)
         if: always()
         uses: actions/upload-artifact@v4
