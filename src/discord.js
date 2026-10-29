@@ -1,4 +1,5 @@
 import {handleBossMessage} from './discord-text.js';
+import {connectDiscord} from './discord-connection.js';
 import {Client,GatewayIntentBits,Events,SlashCommandBuilder,REST,Routes,PermissionFlagsBits} from 'discord.js';
 const choices=['컷','멍','예약','초기화'];
 export function commandDefinitions(testMode=false){return [
@@ -17,7 +18,7 @@ export function commandRoute(i,env){
 }
 function format(b){return `• ${b.name} [맵 ${b.mapNumber||'미확정'}] ${b.time?`<t:${Math.floor(Date.parse(b.time)/1000)}:F>`:'미등록'} · 멍 ${b.misses}`;}
 export async function startDiscord(service,env=process.env){
- if(!env.DISCORD_BOT_TOKEN)return {ready:()=>false,stop:async()=>{}};
+ if(!env.DISCORD_BOT_TOKEN)return {ready:()=>false,status:()=>({enabled:false,ready:false,state:'disabled'}),stop:async()=>{}};
  const testMode=env.DISCORD_TEST_MODE==='true';
  if(testMode&&(!env.DISCORD_GUILD_ID||!env.DISCORD_CHANNEL_ID))throw Error('검증 봇은 서버·채널 ID가 모두 필요합니다');
  const textEnabled=env.DISCORD_TEXT_COMMANDS==='true';
@@ -54,6 +55,9 @@ export async function startDiscord(service,env=process.env){
    const channel=await client.channels.fetch(env.DISCORD_CHANNEL_ID);if(!channel?.isTextBased()||channel.guildId!==env.DISCORD_GUILD_ID)return;
    // The row lock serializes delivery across overlapping deployments. At-least-once: a crash
    // after send and before commit can repeat an event; its ID is displayed for recognition.
+   // An empty committed queue needs no transaction and must not keep Neon awake.
+   const snapshot=await service.store.snapshot();
+   if(!snapshot.outbox.some(e=>!e.sentAt))return;
    await service.store.transaction(async s=>{
     const now=Date.now(),pending=s.outbox.filter(e=>!e.sentAt).slice(0,5);
     for(const e of pending){if(now-Date.parse(e.at)>(String(e.id).startsWith('alarm-')?90000:6*3600000)){e.sentAt='expired';continue;}
@@ -62,6 +66,6 @@ export async function startDiscord(service,env=process.env){
    });
   }catch{console.error('Discord delivery failed; will retry');}finally{publishing=false;}
  },10000);timer.unref();
- client.login(env.DISCORD_BOT_TOKEN).catch(()=>console.error('Discord login failed; check token'));
- return {ready:()=>client.isReady(),stop:async()=>{clearInterval(timer);client.destroy();}};
+ const connection=connectDiscord(client,env.DISCORD_BOT_TOKEN);
+ return {ready:()=>client.isReady(),status:connection.status,stop:async()=>{clearInterval(timer);connection.stop();}};
 }
