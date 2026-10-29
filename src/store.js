@@ -3,9 +3,9 @@ import path from 'node:path';
 import pg from 'pg';
 import {initialState,migrateLegacy,validateSnapshot,upgradeCatalog} from './domain.js';
 export class Store {
- constructor({url=process.env.DATABASE_URL,file=process.env.DATA_FILE||'data/state.json',requireDatabase=process.env.RENDER==='true'}={}){
+ constructor({url=process.env.DATABASE_URL,file=process.env.DATA_FILE||'data/state.json',requireDatabase=process.env.RENDER==='true',cacheMs=10*60*1000,now=Date.now}={}){
   if(requireDatabase&&!url)throw Error('Render에서는 DATABASE_URL 영구 저장소가 필수입니다. 로컬 파일로 실행하지 않습니다.');
-  this.file=file;this.tail=Promise.resolve();this.pool=url?new pg.Pool({connectionString:url,max:3,connectionTimeoutMillis:10000,idleTimeoutMillis:30000}):null;
+  this.file=file;this.tail=Promise.resolve();this.cacheMs=cacheMs;this.now=now;this.cached=null;this.cachedAt=0;this.pool=url?new pg.Pool({connectionString:url,max:3,connectionTimeoutMillis:10000,idleTimeoutMillis:30000}):null;
   this.pool?.on('error',()=>console.error('Database idle connection failed; retry on next operation'));
  }
  async init(){
@@ -31,7 +31,7 @@ export class Store {
      if(backup||state.revision!==before.revision){await c.query('INSERT INTO boss_backups(reason,data) VALUES($1,$2)',[reason,JSON.stringify(before)]);await c.query('DELETE FROM boss_backups WHERE id NOT IN (SELECT id FROM boss_backups ORDER BY id DESC LIMIT 200)');}
      await c.query('UPDATE boss_state SET data=$1 WHERE id=1',[JSON.stringify(state)]);
     }
-    await c.query('COMMIT');return structuredClone(result);
+    await c.query('COMMIT');this.cached=structuredClone(state);this.cachedAt=this.now();return structuredClone(result);
    }catch(e){await c.query('ROLLBACK').catch(()=>{});throw e;}finally{c.release();}}
    const before=this.local,state=structuredClone(before),result=await fn(state);
    if(JSON.stringify(before)!==JSON.stringify(state)){
@@ -41,8 +41,23 @@ export class Store {
   };
   const p=this.tail.then(run);this.tail=p.catch(()=>{});return p;
  }
- async ping(){if(this.pool)await this.pool.query('SELECT 1');return true;}
- async schedule(){if(this.pool){const {rows}=await this.pool.query("SELECT jsonb_agg(jsonb_build_object('time', b->'time', 'intervalMinutes', b->'intervalMinutes', 'fixedKstMinutes', b->'fixedKstMinutes')) AS bosses FROM boss_state, jsonb_array_elements(data->'bosses') b WHERE id=1");return rows[0].bosses;}return structuredClone(this.local.bosses);}
+ // Only committed snapshots enter the cache. All reads and writes use the same
+ // queue, so an in-flight refresh cannot overwrite a newer committed action.
+ snapshot({fresh=false}={}){
+  const run=async()=>{
+   if(!this.pool)return structuredClone(this.local);
+   if(fresh||!this.cached||this.now()-this.cachedAt>=this.cacheMs){
+    const {rows}=await this.pool.query('SELECT data FROM boss_state WHERE id=1');
+    if(!rows[0])throw Error('Persistent state missing');
+    this.cached=structuredClone(rows[0].data);this.cachedAt=this.now();
+   }
+   return structuredClone(this.cached);
+  };
+  const p=this.tail.then(run);this.tail=p.catch(()=>{});return p;
+ }
+ async ping(){await this.snapshot();return true;}
+ status(){return {lastVerifiedAt:this.pool&&this.cached?new Date(this.cachedAt).toISOString():null,maxStalenessMs:this.cacheMs};}
+ async schedule(){return (await this.snapshot()).bosses;}
  async backups(){if(this.pool)return (await this.pool.query('SELECT id,created_at,reason FROM boss_backups ORDER BY id DESC LIMIT 200')).rows;const dir=path.join(path.dirname(this.file),'backups');return (await fs.readdir(dir).catch(e=>{if(e.code==='ENOENT')return [];throw e;})).sort().reverse().map(id=>({id}));}
  async backupById(id){if(this.pool){if(!/^\d+$/.test(id))return null;return (await this.pool.query('SELECT data FROM boss_backups WHERE id=$1',[id])).rows[0]?.data;}if(!/^\d+-\d+\.json$/.test(id))return null;try{return JSON.parse(await fs.readFile(path.join(path.dirname(this.file),'backups',id),'utf8'));}catch(e){if(e.code==='ENOENT')return null;throw e;}}
  async close(){await this.tail;await this.pool?.end();}
