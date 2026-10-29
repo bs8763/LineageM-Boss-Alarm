@@ -12,7 +12,7 @@ export function iso(value){
 export function nextFixed(minutes,after){const day=86400000,kst=after+9*3600000,base=Math.floor(kst/day)*day-9*3600000;return Math.min(...minutes.map(m=>{let t=base+m*60000; if(t<=after)t+=day;return t;}));}
 export function nextSpawn(b,after){if(b.fixedKstMinutes.length)return nextFixed(b.fixedKstMinutes,after);if(b.intervalMinutes)return after+b.intervalMinutes*60000;throw new DomainError('리젠 시간 또는 고정 시간을 먼저 설정하세요');}
 export function findBoss(s,id){const b=s.bosses.find(b=>b.id===id||b.name===id);if(!b)throw new DomainError('보스를 찾을 수 없습니다',404);return b;}
-function event(s,b,action,actor,now,details={}){s.revision++;b.version++;const e={id:s.revision,bossId:b.id,name:b.name,action,actor,at:new Date(now).toISOString(),...details};s.history.push(e);s.history=s.history.slice(-1000);s.outbox.push({...e,attempts:0});s.outbox=s.outbox.slice(-1000);return e;}
+function event(s,b,action,actor,now,details={}){s.revision++;b.version++;const e={id:s.revision,bossId:b.id,name:b.name,action,actor,at:new Date(now).toISOString(),...details};s.history.push(e);s.history=s.history.slice(-1000);s.outbox.push({...e,bossSnapshot:{id:b.id,name:b.name,mapNumber:b.mapNumber,time:b.time,misses:b.misses,lastAction:b.lastAction,version:b.version},attempts:0});s.outbox=s.outbox.slice(-1000);return e;}
 export function advance(s,now=Date.now()){
  for(const b of s.bosses){if(!b.time||(!b.intervalMinutes&&!b.fixedKstMinutes.length))continue;
  const due=Date.parse(b.time);if(now<due+GRACE)continue;

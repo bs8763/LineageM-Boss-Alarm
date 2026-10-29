@@ -15,6 +15,15 @@ export function commandRoute(i,env){
  if(testMode&&(!env.DISCORD_GUILD_ID||!env.DISCORD_CHANNEL_ID||i.guildId!==env.DISCORD_GUILD_ID||i.channelId!==env.DISCORD_CHANNEL_ID))return null;
  return i.commandName.slice(prefix.length);
 }
+export function formatBossEvent(e,currentBoss){
+ const b=e.bossSnapshot||currentBoss;
+ const actionNames={cut:'⚔️ 보스 컷 완료',miss:'🌙 보스 멍 처리',schedule:'📅 보스 시간 등록'};
+ const timestamp=t=>t?'<t:'+Math.floor(Date.parse(t)/1000)+':F>':'미등록';
+ if(e.action==='auto-miss')return '⏰ 보스 자동 멍 처리 · #'+e.id+'\n보스: '+e.name+'\n맵: '+(b?.mapNumber||'미확정')+'\n이전 출현 예정: '+timestamp(e.previousTime)+'\n미입력 경과: 30분 이상\n자동 멍 처리: '+(e.count||1)+'회\n누적 멍 횟수: '+(b?.misses??'미확인')+'회\n다음 예상 출현: '+timestamp(e.time)+'\n등록 경로: 시스템 자동 처리';
+ if(!actionNames[e.action])return '⚔️ #'+e.id+' '+e.name+' · '+e.action+'\n맵 '+(b?.mapNumber||'미확정')+' · '+timestamp(e.time);
+ const source=String(e.actor||'').startsWith('web:')?'안드로이드 앱 / 웹':'디스코드';
+ return actionNames[e.action]+' · #'+e.id+'\n보스: '+e.name+'\n맵: '+(b?.mapNumber||'미확정')+'\n처리 시간: '+timestamp(e.at)+'\n다음 출현: '+timestamp(e.time)+'\n멍 횟수: '+(b?.misses??'미확인')+'회\n등록 경로: '+source;
+}
 function format(b){return `• ${b.name} [맵 ${b.mapNumber||'미확정'}] ${b.time?`<t:${Math.floor(Date.parse(b.time)/1000)}:F>`:'미등록'} · 멍 ${b.misses}`;}
 export async function startDiscord(service,env=process.env){
  if(!env.DISCORD_BOT_TOKEN)return {ready:()=>false,stop:async()=>{}};
@@ -72,7 +81,7 @@ export async function startDiscord(service,env=process.env){
    await service.store.transaction(async s=>{
     const now=Date.now(),pending=s.outbox.filter(e=>!e.sentAt).slice(0,5);
     for(const e of pending){if(now-Date.parse(e.at)>(String(e.id).startsWith('alarm-')?90000:6*3600000)){e.sentAt='expired';continue;}
-     try{const b=s.bosses.find(b=>b.id===e.bossId);await channel.send({content:`⚔️ #${e.id} ${e.name} · ${e.action}${e.count?` (${e.count}회)`:''}\n맵 ${b?.mapNumber||'미확정'} · ${e.time?`<t:${Math.floor(Date.parse(e.time)/1000)}:F>`:'시간 미등록'}`,allowedMentions:{parse:[]}});e.sentAt=new Date().toISOString();}catch{e.attempts++;break;}}
+     try{const b=s.bosses.find(b=>b.id===e.bossId);await channel.send({content:formatBossEvent(e,b),allowedMentions:{parse:[]}});e.sentAt=new Date().toISOString();}catch{e.attempts++;break;}}
     s.outbox=s.outbox.filter(e=>!e.sentAt).slice(-1000);return null;
    });
   }catch{console.error('Discord delivery failed; will retry');}finally{publishing=false;}
