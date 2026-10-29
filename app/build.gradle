@@ -2,6 +2,23 @@ plugins { id 'com.android.application' }
 def configuredUrl = providers.environmentVariable('BOSS_APP_URL').getOrElse('https://lineagem-boss-alarm.onrender.com')
 if (!(configuredUrl ==~ /https:\/\/[a-zA-Z0-9.-]+(?::[0-9]+)?/)) { throw new GradleException('BOSS_APP_URL must be an HTTPS origin without path') }
 android {
+    signingConfigs {
+        release {
+            def storePath = providers.environmentVariable('ANDROID_KEYSTORE_PATH').orNull
+            if (storePath) {
+                storeFile file(storePath)
+                storePassword providers.environmentVariable('ANDROID_KEYSTORE_PASSWORD').get()
+                keyAlias providers.environmentVariable('ANDROID_KEY_ALIAS').get()
+                keyPassword providers.environmentVariable('ANDROID_KEY_PASSWORD').get()
+            }
+        }
+    }
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+        }
+    }
     namespace 'com.bs8763.bossalarm'
     compileSdk 35
     defaultConfig {
