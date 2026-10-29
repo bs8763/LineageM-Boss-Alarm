@@ -36,7 +36,8 @@ public class MainActivity extends Activity {
             @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest req){return !trusted(req.getUrl());}
             @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest req){if(!trusted(req.getUrl()))return new WebResourceResponse("text/plain","utf-8",new java.io.ByteArrayInputStream(new byte[0]));return null;}
             @Override public void onSafeBrowsingHit(WebView view,WebResourceRequest request,int threatType,SafeBrowsingResponse callback){
-                callback.backToSafety(true);
+                if(android.os.Build.VERSION.SDK_INT >= 27) callback.backToSafety(true);
+                else view.stopLoading();
                 status.setText("보안 경고 · 위험한 페이지 접근이 차단되었습니다");
             }
             @Override public void onPageFinished(WebView view,String url){if(trusted(Uri.parse(url)))status.setText("혈맹 보스탐 · 한국시간 · 앱 종료 시 접속 키 삭제");else status.setText("허용되지 않은 페이지가 차단되었습니다");}
