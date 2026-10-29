@@ -28,9 +28,12 @@ export async function startDiscord(service,env=process.env){
  const allowed=i=>i.inGuild()&&Boolean(env.DISCORD_GUILD_ID)&&i.guildId===env.DISCORD_GUILD_ID;
  client.on(Events.InteractionCreate,async i=>{
   if(!i.isChatInputCommand())return;
-  const commandName=commandRoute(i,env);if(!commandName)return;
-  if(!allowed(i))return i.reply({content:'설정된 혈맹 서버에서만 사용 가능합니다',ephemeral:true});
-  try{await i.deferReply({ephemeral:testMode||commandName==='보스초기화'});
+  // Log only routing metadata. Never log tokens, option values, user IDs or database records.
+  console.log('Discord interaction received:',JSON.stringify({name:i.commandName,guildMatch:i.guildId===env.DISCORD_GUILD_ID,channelMatch:i.channelId===env.DISCORD_CHANNEL_ID,testMode}));
+  const commandName=commandRoute(i,env);
+  if(!commandName){console.warn('Discord interaction ignored:',JSON.stringify({name:i.commandName,knownCommand:commandDefinitions(testMode).some(c=>c.name===i.commandName),guildMatch:i.guildId===env.DISCORD_GUILD_ID,channelMatch:i.channelId===env.DISCORD_CHANNEL_ID}));return;}
+  if(!allowed(i)){console.warn('Discord interaction rejected: wrong guild');return i.reply({content:'설정된 혈맹 서버에서만 사용 가능합니다',ephemeral:true});}
+  try{console.log('Discord interaction handling:',commandName);await i.deferReply({ephemeral:testMode||commandName==='보스초기화'});
    if(commandName==='보스목록'){const s=await service.read();const list=[...s.bosses].sort((a,b)=>(a.time||'z').localeCompare(b.time||'z'));const lines=list.map(format);let chunk='⚔️ 혈맹 보스탐 (한국시간)\n';const chunks=[];for(const line of lines){if(chunk.length+line.length>1800){chunks.push(chunk);chunk='';}chunk+=line+'\n';}chunks.push(chunk);await i.editReply(chunks.shift());for(const content of chunks)await i.followUp(content);}
    else if(commandName==='보스초기화'){
     if(!admins.has(i.user.id)&&!i.memberPermissions?.has(PermissionFlagsBits.Administrator))throw Error('관리자만 초기화할 수 있습니다');
@@ -40,7 +43,7 @@ export async function startDiscord(service,env=process.env){
     const action=commandName==='보스등록'?'schedule':i.options.getString('동작')==='컷'?'cut':'miss';
     const result=await service.action({id:b.id,action,time:action==='schedule'?parseKst(i.options.getString('시간')):undefined,expectedVersion:b.version,actor:`discord:${i.user.id}`});await i.editReply(`${testMode?'🧪 검증 DB · ':''}✅ ${format(result)}`);if(testMode)console.log('Discord verification action committed:',action);
    }
-  }catch(e){const content=e.status?e.message:(/시간|날짜|관리자|확인|이름|보스목록/.test(e.message)?e.message:'처리 실패. 잠시 후 다시 시도하세요');try{if(i.deferred||i.replied)await i.editReply(content);else await i.reply({content,ephemeral:true});}catch{console.error('Discord response failed');}}
+  }catch(e){console.error('Discord interaction handler failed:',JSON.stringify({command:commandName,stage:i.deferred?'after-defer':'before-defer',code:String(e?.code||e?.status||'unknown'),errorType:String(e?.name||'Error')}));const content=e.status?e.message:(/시간|날짜|관리자|확인|이름|보스목록/.test(e.message)?e.message:'처리 실패. 잠시 후 다시 시도하세요');try{if(i.deferred||i.replied)await i.editReply(content);else await i.reply({content,ephemeral:true});}catch{console.error('Discord response failed');}}
  });
  client.once(Events.ClientReady,async()=>{
   console.log('Discord ready');
