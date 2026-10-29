@@ -1,0 +1,31 @@
+{
+  "engine": "PGlite 0.5.13 (embedded PostgreSQL); virtual 17-hour clock; no production connections; synthetic Discord delivery sink, not actual Discord messages",
+  "reports": [
+    {
+      "scenario": "idle",
+      "hours": 17,
+      "baselineQueries": 28561,
+      "improvedQueries": 101,
+      "reductionPercent": 99.64637092538776,
+      "baselineModeledActiveMinutes": 1024.8333333333333,
+      "improvedModeledActiveMinutes": 510,
+      "deliveredEvents": 0,
+      "deliveredAlarms": 0,
+      "persistedStateEqual": true,
+      "deliverySequenceAndTimestampsEqual": true
+    },
+    {
+      "scenario": "alarms",
+      "hours": 17,
+      "baselineQueries": 32736,
+      "improvedQueries": 4357,
+      "reductionPercent": 86.6904936461388,
+      "baselineModeledActiveMinutes": 1024.8333333333333,
+      "improvedModeledActiveMinutes": 833.8333333333334,
+      "deliveredEvents": 678,
+      "deliveredAlarms": 513,
+      "persistedStateEqual": true,
+      "deliverySequenceAndTimestampsEqual": true
+    }
+  ]
+}
