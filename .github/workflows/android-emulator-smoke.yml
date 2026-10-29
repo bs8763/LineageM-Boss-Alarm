@@ -42,7 +42,7 @@ jobs:
             gradle --no-daemon :app:assembleDebug
             adb install -r app/build/outputs/apk/debug/app-debug.apk
             adb shell am start -W -n com.bs8763.bossalarm/.MainActivity | tee launch-result.txt
-            sleep 20
+            sleep 90
             adb shell pidof com.bs8763.bossalarm | tee app-pid.txt
             adb shell dumpsys activity activities > activities.txt
             adb logcat -d -b crash > crash-log.txt
