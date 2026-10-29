@@ -15,7 +15,8 @@ export function commandRoute(i,env){
  if(testMode&&(!env.DISCORD_GUILD_ID||!env.DISCORD_CHANNEL_ID||i.guildId!==env.DISCORD_GUILD_ID||i.channelId!==env.DISCORD_CHANNEL_ID))return null;
  return i.commandName.slice(prefix.length);
 }
-export function formatBossEvent(e,b){
+export function formatBossEvent(e,currentBoss){
+ const b=e.bossSnapshot||currentBoss;
  const actionNames={cut:'⚔️ 보스 컷 완료',miss:'🌙 보스 멍 처리',schedule:'📅 보스 시간 등록'};
  const timestamp=t=>t?'<t:'+Math.floor(Date.parse(t)/1000)+':F>':'미등록';
  if(e.action==='auto-miss')return '⏰ 보스 자동 멍 처리 · #'+e.id+'\n보스: '+e.name+'\n맵: '+(b?.mapNumber||'미확정')+'\n이전 출현 예정: '+timestamp(e.previousTime)+'\n미입력 경과: 30분 이상\n자동 멍 처리: '+(e.count||1)+'회\n누적 멍 횟수: '+(b?.misses??'미확인')+'회\n다음 예상 출현: '+timestamp(e.time)+'\n등록 경로: 시스템 자동 처리';
