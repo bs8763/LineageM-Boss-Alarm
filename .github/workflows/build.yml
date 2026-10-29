@@ -51,18 +51,24 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Build and lint
-        run: gradle --no-daemon :app:lintDebug :app:assembleDebug
+      - name: Build release, lint and test origin restrictions
+        run: gradle --no-daemon :app:lintRelease :app:testReleaseUnitTest :app:assembleRelease :app:dependencies --configuration releaseRuntimeClasspath
         env:
           BOSS_APP_URL: ${{ vars.BOSS_APP_URL || 'https://lineagem-boss-alarm.onrender.com' }}
-      - name: APK checksum
-        run: sha256sum app/build/outputs/apk/debug/app-debug.apk > app/build/outputs/apk/debug/SHA256SUMS.txt
+      - name: Focused APK security gate and signing tools
+        run: |
+          mkdir -p security-artifact/tools
+          cp app/build/outputs/apk/release/app-release-unsigned.apk security-artifact/
+          python3 scripts/audit_apk.py security-artifact/app-release-unsigned.apk --aapt "$ANDROID_HOME/build-tools/34.0.0/aapt" --release > security-artifact/security-audit.json
+          cp "$ANDROID_HOME/build-tools/34.0.0/lib/apksigner.jar" security-artifact/tools/
+          cp "$ANDROID_HOME/build-tools/34.0.0/aapt" security-artifact/tools/
+          cp app/build/reports/lint-results-release.* security-artifact/
+          cp -r app/build/test-results/testReleaseUnitTest security-artifact/
+          sha256sum security-artifact/app-release-unsigned.apk security-artifact/tools/* > security-artifact/SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: LineageM-Boss-Alarm-debug-${{ github.sha }}
-          path: |
-            app/build/outputs/apk/debug/app-debug.apk
-            app/build/outputs/apk/debug/SHA256SUMS.txt
+          name: LineageM-Boss-Alarm-security-unsigned-${{ github.sha }}
+          path: security-artifact/
           if-no-files-found: error
           retention-days: 14
 
