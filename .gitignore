@@ -1,0 +1,11 @@
+node_modules/
+.env
+.env.*
+!.env.example
+data/
+bosses.json
+*.apk
+*.keystore
+.gradle/
+**/build/
+local.properties

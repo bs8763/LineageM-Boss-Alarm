@@ -1,0 +1,35 @@
+name: Encrypted manual backup
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  backup:
+    # Manual opt-in only: requires encryption passphrase, never uploads plaintext clan data.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Export and encrypt
+        env:
+          BOSS_APP_URL: ${{ vars.BOSS_APP_URL || 'https://lineagem-boss-alarm.onrender.com' }}
+          ADMIN_TOKEN: ${{ secrets.BOSS_ADMIN_TOKEN }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$ADMIN_TOKEN"
+          test -n "$BACKUP_PASSPHRASE"
+          umask 077
+          trap 'rm -f /tmp/boss-backup.json' EXIT
+          node scripts/backup.js > /tmp/boss-backup.json
+          gpg --batch --yes --pinentry-mode loopback --passphrase-fd 3 --symmetric --cipher-algo AES256 --output boss-backup.json.gpg /tmp/boss-backup.json 3<<< "$BACKUP_PASSPHRASE"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: encrypted-boss-backup-${{ github.run_id }}
+          path: boss-backup.json.gpg
+          if-no-files-found: error
+          retention-days: 30
