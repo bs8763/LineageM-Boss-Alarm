@@ -43,11 +43,23 @@ export async function startDiscord(service,env=process.env){
   }catch(e){const content=e.status?e.message:(/시간|날짜|관리자|확인|이름|보스목록/.test(e.message)?e.message:'처리 실패. 잠시 후 다시 시도하세요');try{if(i.deferred||i.replied)await i.editReply(content);else await i.reply({content,ephemeral:true});}catch{console.error('Discord response failed');}}
  });
  client.once(Events.ClientReady,async()=>{
-  console.log('Discord ready');if(env.REGISTER_DISCORD_COMMANDS!=='true')return;
+  console.log('Discord ready');
+  console.log('Discord command diagnostics:',JSON.stringify({
+   testMode,registrationEnabled:env.REGISTER_DISCORD_COMMANDS==='true',
+   guildConfigured:Boolean(env.DISCORD_GUILD_ID),channelConfigured:Boolean(env.DISCORD_CHANNEL_ID),
+   textCommandsEnabled:textEnabled,expectedNames:commandDefinitions(testMode).map(c=>c.name)
+  }));
+  if(env.REGISTER_DISCORD_COMMANDS!=='true')return;
   try{const rest=new REST({version:'10'}).setToken(env.DISCORD_BOT_TOKEN);if(!env.DISCORD_GUILD_ID)throw Error('DISCORD_GUILD_ID required');
-   // Do not overwrite other applications/global commands; register by name in this guild.
-   for(const body of commandDefinitions(testMode))await rest.post(Routes.applicationGuildCommands(client.user.id,env.DISCORD_GUILD_ID),{body});
-  }catch{console.error('Discord command registration failed; check guild and permissions');}
+   // Only this application's guild commands are affected; never log tokens or credentials.
+   const route=Routes.applicationGuildCommands(client.user.id,env.DISCORD_GUILD_ID);
+   for(const body of commandDefinitions(testMode)){
+    const registered=await rest.post(route,{body});
+    console.log('Discord command registered:',registered.name,'id:',registered.id);
+   }
+   const actual=await rest.get(route);
+   console.log('Discord guild commands after registration:',actual.map(c=>c.name).join(', '));
+  }catch(e){console.error('Discord command registration failed:',e?.status||e?.code||'unknown',String(e?.message||'unknown').slice(0,300));}
  });
  const timer=setInterval(async()=>{if(testMode||publishing||!client.isReady()||!env.DISCORD_CHANNEL_ID||!env.DISCORD_GUILD_ID)return;publishing=true;
   try{
