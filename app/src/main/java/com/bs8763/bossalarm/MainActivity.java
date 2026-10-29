@@ -30,12 +30,16 @@ public class MainActivity extends Activity {
         status=new TextView(this); status.setTextColor(Color.WHITE);status.setPadding(24,12,24,12);status.setText("서버 연결 중 · 절전 해제는 약 1분 걸릴 수 있습니다");layout.addView(status);
         Button retry=new Button(this);retry.setText("새로고침 / 연결 재시도");retry.setOnClickListener(v->web.loadUrl(BuildConfig.APP_URL));layout.addView(retry);
         web=new WebView(this);layout.addView(web,new LinearLayout.LayoutParams(-1,0,1));setContentView(layout);
-        WebSettings settings=web.getSettings();settings.setJavaScriptEnabled(true);settings.setDomStorageEnabled(false);settings.setAllowFileAccess(false);settings.setAllowContentAccess(true);settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+        WebSettings settings=web.getSettings();settings.setJavaScriptEnabled(true);settings.setSafeBrowsingEnabled(true);settings.setJavaScriptCanOpenWindowsAutomatically(false);settings.setSupportMultipleWindows(false);settings.setDomStorageEnabled(false);settings.setAllowFileAccess(false);settings.setAllowContentAccess(true);settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         web.addJavascriptInterface(new BackupBridge(),"BossBackup");
         web.setWebViewClient(new WebViewClient(){
             @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest req){return !trusted(req.getUrl());}
             @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest req){if(!trusted(req.getUrl()))return new WebResourceResponse("text/plain","utf-8",new java.io.ByteArrayInputStream(new byte[0]));return null;}
-            @Override public void onPageFinished(WebView view,String url){status.setText("혈맹 보스탐 · 한국시간 · 앱 종료 시 접속 키 삭제");}
+            @Override public void onSafeBrowsingHit(WebView view,WebResourceRequest request,int threatType,SafeBrowsingResponse callback){
+                callback.backToSafety(true);
+                status.setText("보안 경고 · 위험한 페이지 접근이 차단되었습니다");
+            }
+            @Override public void onPageFinished(WebView view,String url){if(trusted(Uri.parse(url)))status.setText("혈맹 보스탐 · 한국시간 · 앱 종료 시 접속 키 삭제");else status.setText("허용되지 않은 페이지가 차단되었습니다");}
             @Override public void onReceivedError(WebView view,WebResourceRequest req,WebResourceError error){if(req.isForMainFrame())status.setText("연결 실패 · 위 버튼으로 다시 시도하세요");}
             @Override public void onReceivedSslError(WebView view,android.webkit.SslErrorHandler handler,android.net.http.SslError error){handler.cancel();status.setText("인증서 확인 실패");}
         });
