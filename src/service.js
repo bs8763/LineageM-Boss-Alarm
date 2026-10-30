@@ -1,7 +1,7 @@
 import {advance,act,configure,reset,restore,migrateLegacy,undo,DomainError} from './domain.js';
 export class Service {
  constructor(store){this.store=store;}
- async tick(){const bosses=await this.store.schedule(),now=Date.now();const due=bosses.some(b=>{if(!b.time)return false;const t=Date.parse(b.time);return ((b.intervalMinutes||b.fixedKstMinutes.length)&&now>=t+30*60000)||[10,5,0].some(m=>now>=t-m*60000&&now-(t-m*60000)<=90000);});if(due)await this.read();}
+ async tick(){const bosses=await this.store.schedule(),now=Date.now();const due=bosses.some(b=>{if(!b.time)return false;const t=Date.parse(b.time);return ((b.intervalMinutes||b.fixedKstMinutes.length)&&now>=t+30*60000)||[10,5,1].some(m=>now>=t-m*60000&&now-(t-m*60000)<=90000);});if(due)await this.read();}
  async read(){return this.store.transaction(s=>{advance(s);queueAlarms(s);return s;},{reason:'auto-advance'});}
  async action(data){return this.store.transaction(s=>{advance(s);return act(s,data);},{reason:data.action});}
  async messageAction({messageId,...data}){
@@ -26,7 +26,7 @@ export class Service {
 export function queueAlarms(s,now=Date.now()){
  s.alarmKeys??=[];
  for(const b of s.bosses){if(!b.time)continue;const due=Date.parse(b.time);
-  for(const minutes of [10,5,0]){const target=due-minutes*60000;
+  for(const minutes of [10,5,1]){const target=due-minutes*60000;
    // Skip old alerts after a cold start; catch-up must not flood Discord.
    if(now<target||now-target>90000)continue;
    const id=`alarm-${b.id}-${b.time}-${minutes}`;if(s.alarmKeys.includes(id))continue;
