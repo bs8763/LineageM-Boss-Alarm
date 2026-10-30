@@ -27,7 +27,13 @@ export async function handleBossMessage(message,service,env){
  if(!permissions?.has([PermissionFlagsBits.ViewChannel,sendPermission])||(role&&!permissions.has(PermissionFlagsBits.Administrator)&&!message.member.roles?.cache.has(role))){await reply('보스 명령 권한이 없습니다. 저장하지 않았습니다.');return;}
  if(!Number.isFinite(message.createdTimestamp)||Date.now()-message.createdTimestamp>90000||message.createdTimestamp>Date.now()+60000){await reply('오래된 메시지는 처리하지 않습니다. 새 메시지로 입력해 주세요.');return;}
  let result;
- try{result=await service.messageAction({messageId:message.id,id:parsed.name,action:parsed.action,time:parsed.action==='cut'?new Date(message.createdTimestamp).toISOString():parsed.action==='schedule'?nextKstReservation(parsed.hhmm,message.createdTimestamp):undefined,actor:`discord:${message.author.id}`});}
+ try{
+  if(parsed.action==='schedule'){
+   const snapshot=await service.read();
+   const boss=snapshot.bosses.find(b=>b.id===parsed.name||b.name===parsed.name);
+   if(boss?.fixedKstMinutes?.length){await reply('고정 보스는 예약 명령으로 시간을 변경할 수 없습니다.');return;}
+  }
+  result=await service.messageAction({messageId:message.id,id:parsed.name,action:parsed.action,time:parsed.action==='cut'?new Date(message.createdTimestamp).toISOString():parsed.action==='schedule'?nextKstReservation(parsed.hhmm,message.createdTimestamp):undefined,actor:`discord:${message.author.id}`});}
  catch(e){await reply(e.status?e.message:'저장 실패. 잠시 후 다시 시도하세요.');return;}
  // A response failure must never roll back or repeat the committed boss action.
  const b=result.boss;
