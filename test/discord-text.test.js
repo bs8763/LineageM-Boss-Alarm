@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {Store} from '../src/store.js';
 import {Service} from '../src/service.js';
-import {handleBossMessage,parseBossMessage} from '../src/discord-text.js';
+import {handleBossMessage,parseBossMessage,nextKstReservation} from '../src/discord-text.js';
 const env={DISCORD_TEXT_COMMANDS:'true',DISCORD_TEST_MODE:'true',DISCORD_GUILD_ID:'guild',DISCORD_TEXT_CHANNEL_ID:'test'};
 function message(content,id='1564906069317255209',patch={}){const replies=[];return {content,id,guildId:'guild',channelId:'test',channel:{},createdTimestamp:Date.now(),author:{id:'member',bot:false},member:{permissionsIn:()=>({has:()=>true}),roles:{cache:new Map()}},replies,reply:async r=>replies.push(r),...patch};}
 async function fixture(fn){const dir=await fs.mkdtemp(path.join(os.tmpdir(),'boss-chat-'));const file=path.join(dir,'state.json');const store=new Store({url:'',file});await store.init();try{await fn(new Service(store),store,file);}finally{await store.close();await fs.rm(dir,{recursive:true,force:true});}}
@@ -38,4 +38,23 @@ test('private thread commands use SendMessagesInThreads permission',()=>fixture(
  const {PermissionFlagsBits:P}=await import('discord.js');
  const m=message('서드 컷',undefined,{channel:{isThread:()=>true},member:{permissionsIn:()=>({has:flags=>Array.isArray(flags)&&flags.includes(P.ViewChannel)&&flags.includes(P.SendMessagesInThreads)})}});
  await handleBossMessage(m,service,env);assert.equal((await service.read()).bosses[0].lastAction,'cut');
+}));
+
+test('reservation parser and Korean midnight rollover',()=>{
+ assert.deepEqual(parseBossMessage('예약 빨샤 0000'),{name:'빨샤',action:'schedule',hhmm:'0000'});
+ assert.equal(nextKstReservation('0000',Date.parse('2026-10-30T04:00:00Z')),'2026-10-30T15:00:00.000Z');
+ assert.equal(nextKstReservation('1330',Date.parse('2026-10-30T04:00:00Z')),'2026-10-30T04:30:00.000Z');
+ assert.equal(nextKstReservation('1330',Date.parse('2026-10-30T05:00:00Z')),'2026-10-31T04:30:00.000Z');
+ assert.throws(()=>nextKstReservation('2460'));
+});
+test('reservation updates a real boss and duplicate message is idempotent',()=>fixture(async(service)=>{
+ const m=message('예약 서드 0000');
+ await handleBossMessage(m,service,env);
+ await handleBossMessage(m,service,env);
+ const s=await service.read();
+ const boss=s.bosses.find(b=>b.name==='서드');
+ assert.ok(boss.time);
+ assert.equal(new Date(Date.parse(boss.time)+9*3600000).getUTCHours(),0);
+ assert.equal(s.history.filter(e=>e.name==='서드'&&e.action==='schedule').length,1);
+ assert.match(m.replies[0].content,/예약 완료/);
 }));
