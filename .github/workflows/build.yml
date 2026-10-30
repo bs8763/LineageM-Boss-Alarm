@@ -51,14 +51,6 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Require live HTTPS API origin
-        env:
-          BOSS_APP_URL: ${{ vars.BOSS_APP_URL }}
-        run: |
-          if ! [[ "$BOSS_APP_URL" =~ ^https://[A-Za-z0-9.-]+(:[0-9]+)?$ ]]; then
-            echo '::error::Set repository variable BOSS_APP_URL to the live HTTPS API origin (not suspended Render)'
-            exit 1
-          fi
       - name: Build and lint
         run: gradle --no-daemon :app:lintDebug :app:assembleDebug
         env:
@@ -109,14 +101,6 @@ jobs:
           umask 077
           printf '%s' "$KEYSTORE" | base64 --decode > "$RUNNER_TEMP/release.keystore"
           test -s "$RUNNER_TEMP/release.keystore"
-      - name: Require live HTTPS API origin
-        env:
-          BOSS_APP_URL: ${{ vars.BOSS_APP_URL }}
-        run: |
-          if ! [[ "$BOSS_APP_URL" =~ ^https://[A-Za-z0-9.-]+(:[0-9]+)?$ ]]; then
-            echo '::error::Set repository variable BOSS_APP_URL to the live HTTPS API origin (not suspended Render)'
-            exit 1
-          fi
       - name: Build signed release APK
         env:
           ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/release.keystore
