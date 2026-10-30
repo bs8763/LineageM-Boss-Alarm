@@ -27,7 +27,7 @@ public final class MainActivity extends Activity {
   private int dp(int n){return (int)(n*getResources().getDisplayMetrics().density+.5f);}
   private TextView label(String s,int size){TextView t=new TextView(this);t.setText(s);t.setTextColor(Color.WHITE);t.setTextSize(size);t.setPadding(dp(8),dp(8),dp(8),dp(8));return t;}
   private Button button(String s,View.OnClickListener cb){Button b=new Button(this);b.setText(s);b.setOnClickListener(cb);return b;}
-  private LinearLayout column(){LinearLayout l=new LinearLayout(this);l.setOrientation(1);return l;}
+  private LinearLayout column(){LinearLayout l=new LinearLayout(this);l.setOrientation(LinearLayout.VERTICAL);return l;}
   private void screen(String title){ScrollView sc=new ScrollView(this);page=column();page.setPadding(dp(12),dp(20),dp(12),dp(24));page.setBackgroundColor(Color.rgb(17,26,43));sc.addView(page);setContentView(sc);page.addView(label(title,24));feedback=label("",14);page.addView(feedback);}
   private void notice(String s){if(feedback!=null)feedback.setText(s);}
   @Override public void onCreate(Bundle state){super.onCreate(state);login();}
