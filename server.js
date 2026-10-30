@@ -36,7 +36,7 @@ export async function main(){
  if(process.env.CLAN_TOKEN===process.env.ADMIN_TOKEN)throw Error('관리자 키와 혈맹 키는 달라야 합니다');
  const store=new Store();await store.init();const service=new Service(store);const bot=await startDiscord(service);
  let busy=false;const timer=setInterval(async()=>{if(busy)return;busy=true;try{await service.tick();}catch{console.error('Scheduler failed; catch-up on next successful request');}finally{busy=false;}},30000);timer.unref();
- const server=createApp(service).listen(process.env.PORT||3000,()=>console.log('Boss app running'));
+ const server=createApp(service).listen(process.env.PORT||process.env.SERVER_PORT||3000,()=>console.log('Boss app running'));
  async function stop(){clearInterval(timer);server.close();await bot.stop();await store.close();process.exit(0);}process.on('SIGTERM',stop);process.on('SIGINT',stop);
 }
 if(process.argv[1]===fileURLToPath(import.meta.url))main().catch(()=>{console.error('Startup failed: check keys, DATABASE_URL, migration data and database connectivity');process.exitCode=1;});
