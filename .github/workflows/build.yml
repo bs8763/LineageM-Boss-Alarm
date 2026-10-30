@@ -2,7 +2,7 @@ name: Verify and Build Android APK
 on:
   workflow_dispatch:
   push:
-    branches: [main, 'feat/**']
+    branches: [main, 'feat/**', 'rebuild/**']
   pull_request:
 permissions:
   contents: read
