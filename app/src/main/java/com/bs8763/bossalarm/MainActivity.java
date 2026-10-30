@@ -31,7 +31,7 @@ public class MainActivity extends Activity {
     private int dp(int n){return (int)(n*getResources().getDisplayMetrics().density+.5f);}
     private TextView text(String s,int size){TextView v=new TextView(this);v.setText(s);v.setTextColor(Color.WHITE);v.setTextSize(size);v.setPadding(dp(8),dp(8),dp(8),dp(8));return v;}
     private Button button(String label,View.OnClickListener click){Button b=new Button(this);b.setText(label);b.setOnClickListener(click);return b;}
-    private LinearLayout vertical(){LinearLayout v=new LinearLayout(this);v.setOrientation(1);return v;}
+    private LinearLayout vertical(){LinearLayout v=new LinearLayout(this);v.setOrientation(LinearLayout.VERTICAL);return v;}
     private void message(String s){status.setText(s);}
     @Override public void onCreate(Bundle saved){super.onCreate(saved);showLogin();handler.postDelayed(refresh,30000);}
     private void base(String title){ScrollView scroll=new ScrollView(this);root=vertical();root.setPadding(dp(12),dp(20),dp(12),dp(24));root.setBackgroundColor(Color.rgb(16,24,39));scroll.addView(root);setContentView(scroll);root.addView(text(title,24));status=text("",14);root.addView(status);}
