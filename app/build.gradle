@@ -1,6 +1,6 @@
 plugins { id 'com.android.application' }
-def configuredUrl = providers.environmentVariable('BOSS_APP_URL').getOrElse('https://lineagem-boss-alarm.onrender.com')
-if (!(configuredUrl ==~ /https:\/\/[a-zA-Z0-9.-]+(?::[0-9]+)?/)) { throw new GradleException('BOSS_APP_URL must be an HTTPS origin without path') }
+def configuredUrl = providers.environmentVariable('BOSS_APP_URL').getOrElse('')
+if (configuredUrl && !(configuredUrl ==~ /https:\/\/[a-zA-Z0-9.-]+(?::[0-9]+)?/)) { throw new GradleException('BOSS_APP_URL must be an HTTPS origin without path') }
 android {
     signingConfigs {
         release {
