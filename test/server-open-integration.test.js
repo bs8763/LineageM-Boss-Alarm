@@ -172,7 +172,12 @@ test('local persistence and shared HTTP app state reflect server-open and safe u
   const appBosses=await res.json();
   assert.equal(appBosses.find(b=>b.id===applied.updated[0].id).time,applied.updated[0].time);
   assert.equal((await service.serverOpen(opened,'ci')).duplicate,true);
-  await service.undo(applied.eventId,'ci');
+  const undoResponse=await fetch(origin+'/api/admin/undo',{
+   method:'POST',headers:{Authorization:'Bearer '+env.ADMIN_TOKEN,'Content-Type':'application/json'},
+   body:JSON.stringify({eventId:applied.eventId})
+  });
+  assert.equal(undoResponse.status,200);
+  assert.equal((await undoResponse.json()).restoredEvent,applied.eventId);
   assert.equal((await service.read()).bosses.find(b=>b.id===applied.updated[0].id).time,before.bosses.find(b=>b.id===applied.updated[0].id).time);
   assert.ok((await store.backups()).length>=2);
  }finally{
