@@ -12,9 +12,12 @@ import {commandDefinitions,commandRoute,parseKst,parseServerOpenKst,handleServer
 
 const env={CLAN_TOKEN:'clan-server-open-'.repeat(3),ADMIN_TOKEN:'admin-server-open-'.repeat(3)};
 
-test('HH:mm KST server opening resolves midnight rollover and rejects invalid clock time',()=>{
+test('KST server opening uses current date for short clock input and rejects invalid clock time',()=>{
  const at=Date.parse('2026-11-01T15:05:00Z'); // 00:05 KST on Nov 2
- assert.equal(parseServerOpenKst('23:55',at),'2026-11-01T14:55:00.000Z');
+ assert.equal(parseServerOpenKst('23:55',at),'2026-11-02T14:55:00.000Z');
+ assert.equal(parseServerOpenKst('1501',at),'2026-11-02T06:01:00.000Z');
+ assert.equal(parseServerOpenKst('16',at),'2026-11-02T07:00:00.000Z');
+ assert.equal(parseServerOpenKst('0900',at),'2026-11-02T00:00:00.000Z');
  assert.equal(parseServerOpenKst('00:03',at),'2026-11-01T15:03:00.000Z');
  assert.equal(parseServerOpenKst('2026-11-02 00:03',at),'2026-11-01T15:03:00.000Z');
  assert.throws(()=>parseServerOpenKst('25:99',at),/시간/);
