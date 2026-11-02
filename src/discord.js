@@ -5,6 +5,7 @@ export function commandDefinitions(testMode=false){return [
  new SlashCommandBuilder().setName('보스목록').setDescription('출현 예정·맵·멍 현황'),
  new SlashCommandBuilder().setName('보스등록').setDescription('보스 출현 시간 예약').addStringOption(o=>o.setName('이름').setDescription('보스 이름').setRequired(true)).addStringOption(o=>o.setName('시간').setDescription('한국시간 YYYY-MM-DD HH:mm').setRequired(true)),
  new SlashCommandBuilder().setName('보스').setDescription('혈맹 보스 컷·멍').addStringOption(o=>o.setName('동작').setDescription('컷 또는 멍').setRequired(true).addChoices(...choices.slice(0,2).map(name=>({name,value:name})))).addStringOption(o=>o.setName('이름').setDescription('보스 이름').setRequired(true)),
+ new SlashCommandBuilder().setName('서버오픈').setDescription('관리자: 일반 보스 리젠 시간 일괄 재계산').setDefaultMemberPermissions(PermissionFlagsBits.Administrator).addStringOption(o=>o.setName('시간').setDescription('한국시간 YYYY-MM-DD HH:mm').setRequired(true)).addBooleanOption(o=>o.setName('확인').setDescription('true로 실행 확인').setRequired(true)),
  new SlashCommandBuilder().setName('보스초기화').setDescription('관리자: 모든 예정 시간과 멍 초기화').setDefaultMemberPermissions(PermissionFlagsBits.Administrator).addBooleanOption(o=>o.setName('확인').setDescription('true로 실행 확인').setRequired(true))
  ].map(c=>{if(testMode)c.setName('검증'+c.name);return c.toJSON();});}
 export function parseKst(raw){if(!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(raw))throw Error('시간 형식: 2026-10-28 19:30 (한국시간)');const d=new Date(raw.replace(' ','T')+':00+09:00');if(!Number.isFinite(+d)||new Date(+d+9*3600000).toISOString().slice(0,16)!==raw.replace(' ','T'))throw Error('존재하지 않는 날짜·시간');return d.toISOString();}
@@ -43,8 +44,14 @@ export async function startDiscord(service,env=process.env){
   const commandName=commandRoute(i,env);
   if(!commandName){console.warn('Discord interaction ignored:',JSON.stringify({name:i.commandName,knownCommand:commandDefinitions(testMode).some(c=>c.name===i.commandName),guildMatch:i.guildId===env.DISCORD_GUILD_ID,channelMatch:i.channelId===env.DISCORD_CHANNEL_ID}));return;}
   if(!allowed(i)){console.warn('Discord interaction rejected: wrong guild');return i.reply({content:'설정된 혈맹 서버에서만 사용 가능합니다',ephemeral:true});}
-  try{console.log('Discord interaction handling:',commandName);await i.deferReply({ephemeral:testMode||commandName==='보스초기화'});
+  try{console.log('Discord interaction handling:',commandName);await i.deferReply({ephemeral:testMode||['보스초기화','서버오픈'].includes(commandName)});
    if(commandName==='보스목록'){const s=await service.read();const list=[...s.bosses].sort((a,b)=>(a.time||'z').localeCompare(b.time||'z'));const lines=list.map(format);let chunk='⚔️ 혈맹 보스탐 (한국시간)\n';const chunks=[];for(const line of lines){if(chunk.length+line.length>1800){chunks.push(chunk);chunk='';}chunk+=line+'\n';}chunks.push(chunk);await i.editReply(chunks.shift());for(const content of chunks)await i.followUp(content);}
+   else if(commandName==='서버오픈'){
+    if(!admins.has(i.user.id)&&!i.memberPermissions?.has(PermissionFlagsBits.Administrator))throw Error('관리자만 실행할 수 있습니다');
+    if(!i.options.getBoolean('확인'))throw Error('확인=true가 필요합니다');
+    const result=await service.serverOpen(parseKst(i.options.getString('시간')),\`discord:\${i.user.id}\`);
+    await i.editReply(\`서버오픈 적용: 일반 보스 \${result.updated.length}종 재계산, 고정보스 유지. 기록 #\${result.eventId}\`);
+   }
    else if(commandName==='보스초기화'){
     if(!admins.has(i.user.id)&&!i.memberPermissions?.has(PermissionFlagsBits.Administrator))throw Error('관리자만 초기화할 수 있습니다');
     if(!i.options.getBoolean('확인'))throw Error('확인=true가 필요합니다');await service.reset(`discord:${i.user.id}`);await i.editReply('초기화 완료. 변경 전 자동 백업에서 복원할 수 있습니다.');
