@@ -11,7 +11,7 @@ export function commandDefinitions(testMode=false){return [
  ].map(c=>{if(testMode)c.setName('검증'+c.name);return c.toJSON();});}
 export function parseKst(raw){if(!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(raw))throw Error('시간 형식: 2026-10-28 19:30 (한국시간)');const d=new Date(raw.replace(' ','T')+':00+09:00');if(!Number.isFinite(+d)||new Date(+d+9*3600000).toISOString().slice(0,16)!==raw.replace(' ','T'))throw Error('존재하지 않는 날짜·시간');return d.toISOString();}
 export function parseServerOpenKst(raw,now=Date.now()){
- if(/^\\d{2}:\\d{2}$/.test(raw)){
+ if(/^\d{2}:\d{2}$/.test(raw)){
   const [hour,minute]=raw.split(':').map(Number);
   if(hour>23||minute>59)throw Error('존재하지 않는 날짜·시간');
   const day=new Date(now+9*3600000).toISOString().slice(0,10);
