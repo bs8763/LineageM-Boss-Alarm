@@ -5,7 +5,7 @@ export function commandDefinitions(testMode=false){return [
  new SlashCommandBuilder().setName('보스목록').setDescription('출현 예정·맵·멍 현황'),
  new SlashCommandBuilder().setName('보스등록').setDescription('보스 출현 시간 예약').addStringOption(o=>o.setName('이름').setDescription('보스 이름').setRequired(true)).addStringOption(o=>o.setName('시간').setDescription('한국시간 YYYY-MM-DD HH:mm').setRequired(true)),
  new SlashCommandBuilder().setName('보스').setDescription('혈맹 보스 컷·멍').addStringOption(o=>o.setName('동작').setDescription('컷 또는 멍').setRequired(true).addChoices(...choices.slice(0,2).map(name=>({name,value:name})))).addStringOption(o=>o.setName('이름').setDescription('보스 이름').setRequired(true)),
- new SlashCommandBuilder().setName('서버오픈').setDescription('관리자: 일반 보스 리젠 시간 일괄 재계산').setDefaultMemberPermissions(PermissionFlagsBits.Administrator).addStringOption(o=>o.setName('시간').setDescription('한국시간 4자리 HHmm (예: 1501), 16 또는 15:01도 가능').setRequired(true)).addBooleanOption(o=>o.setName('확인').setDescription('true면 실행, 생략하면 미리보기').setRequired(false)),
+ new SlashCommandBuilder().setName('서버오픈').setDescription('관리자: 일반 보스 리젠 시간 일괄 재계산').setDefaultMemberPermissions(PermissionFlagsBits.Administrator).addStringOption(o=>o.setName('시간').setDescription('한국시간 4자리 HHmm (예: 1501), 16 또는 15:01도 가능').setRequired(true)),
  new SlashCommandBuilder().setName('서버오픈취소').setDescription('관리자: 서버오픈 기록 안전하게 되돌리기').setDefaultMemberPermissions(PermissionFlagsBits.Administrator).addIntegerOption(o=>o.setName('기록번호').setDescription('서버오픈 적용 시 표시된 기록 번호').setRequired(true)),
  new SlashCommandBuilder().setName('보스초기화').setDescription('관리자: 모든 예정 시간과 멍 초기화').setDefaultMemberPermissions(PermissionFlagsBits.Administrator).addBooleanOption(o=>o.setName('확인').setDescription('true로 실행 확인').setRequired(true))
  ].map(c=>{if(testMode)c.setName('검증'+c.name);return c.toJSON();});}
@@ -43,11 +43,6 @@ function format(b){return `• ${b.name} [맵 ${b.mapNumber||'미확정'}] ${b.t
 export async function handleServerOpenCommand(i,service,admins){
  if(!admins.has(i.user.id)&&!i.memberPermissions?.has(PermissionFlagsBits.Administrator))throw Error('관리자만 실행할 수 있습니다');
  const openTime=parseServerOpenKst(i.options.getString('시간'));
- if(!i.options.getBoolean('확인')){
-  const plan=await service.previewServerOpen(openTime);
-  const preview=plan.updated.slice(0,8).map(b=>b.name+': '+(b.previousTime||'미등록')+' → '+b.time).join('\n');
-  return '🔎 서버오픈 미리보기 · 일반 보스 '+plan.updated.length+'종 (고정보스 제외)\n'+preview+'\n실행하려면 같은 시간에 확인=true로 다시 입력하세요.';
- }
  const result=await service.serverOpen(openTime,`discord:${i.user.id}`);
  return result.duplicate?'이미 적용된 서버오픈입니다. 기록 #'+result.eventId:`서버오픈 적용: 일반 보스 ${result.updated.length}종 재계산, 고정보스 유지. 기록 #${result.eventId}`;
 }
