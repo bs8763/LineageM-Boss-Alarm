@@ -55,6 +55,15 @@ export async function handleServerOpenUndoCommand(i,service,admins){
  const result=await service.undo(i.options.getInteger('기록번호'),`discord:${i.user.id}`);
  return '서버오픈 기록 #'+result.restoredEvent+' 복구 완료 · 일반 보스 '+result.restoredBosses+'종';
 }
+export async function registerGuildCommands(rest,route,testMode=false){
+ const registered=[];
+ for(const body of commandDefinitions(testMode)){
+  const result=await rest.post(route,{body});
+  registered.push({name:result.name,id:result.id});
+ }
+ const actual=await rest.get(route);
+ return {registered,actualNames:actual.map(c=>c.name)};
+}
 export async function startDiscord(service,env=process.env){
  if(!env.DISCORD_BOT_TOKEN)return {ready:()=>false,stop:async()=>{}};
  const testMode=env.DISCORD_TEST_MODE==='true';
@@ -97,12 +106,9 @@ export async function startDiscord(service,env=process.env){
   try{const rest=new REST({version:'10'}).setToken(env.DISCORD_BOT_TOKEN);if(!env.DISCORD_GUILD_ID)throw Error('DISCORD_GUILD_ID required');
    // Only this application's guild commands are affected; never log tokens or credentials.
    const route=Routes.applicationGuildCommands(client.user.id,env.DISCORD_GUILD_ID);
-   for(const body of commandDefinitions(testMode)){
-    const registered=await rest.post(route,{body});
-    console.log('Discord command registered:',registered.name,'id:',registered.id);
-   }
-   const actual=await rest.get(route);
-   console.log('Discord guild commands after registration:',actual.map(c=>c.name).join(', '));
+   const result=await registerGuildCommands(rest,route,testMode);
+   for(const registered of result.registered)console.log('Discord command registered:',registered.name,'id:',registered.id);
+   console.log('Discord guild commands after registration:',result.actualNames.join(', '));
   }catch(e){console.error('Discord command registration failed:',e?.status||e?.code||'unknown',String(e?.message||'unknown').slice(0,300));}
  });
  const timer=setInterval(async()=>{if(testMode||publishing||!client.isReady()||!env.DISCORD_CHANNEL_ID||!env.DISCORD_GUILD_ID)return;publishing=true;
@@ -114,7 +120,7 @@ export async function startDiscord(service,env=process.env){
     const now=Date.now(),pending=s.outbox.filter(e=>!e.sentAt).slice(0,5);
     for(const e of pending){if(now-Date.parse(e.at)>(String(e.id).startsWith('alarm-')?90000:6*3600000)){e.sentAt='expired';continue;}
      try{const b=s.bosses.find(b=>b.id===e.bossId);const content=formatBossEvent(e,b);if(content===null){e.sentAt='superseded';continue;}await channel.send({content,allowedMentions:{parse:[]}});e.sentAt=new Date().toISOString();}catch{e.attempts++;break;}}
-    s.outbox=s.outbox.filter(e=>!e.sentAt).slice(-1000);return null;
+    s.outbox=s.outbox.slice(-1000);return null;
    });
   }catch{console.error('Discord delivery failed; will retry');}finally{publishing=false;}
  },10000);timer.unref();
