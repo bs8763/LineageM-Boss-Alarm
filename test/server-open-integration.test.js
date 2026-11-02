@@ -8,7 +8,7 @@ import {queueAlarms} from '../src/service.js';
 import {Store} from '../src/store.js';
 import {Service} from '../src/service.js';
 import {createApp} from '../server.js';
-import {commandDefinitions,commandRoute,parseKst,parseServerOpenKst,handleServerOpenCommand,handleServerOpenUndoCommand} from '../src/discord.js';
+import {commandDefinitions,commandRoute,parseKst,parseServerOpenKst,handleServerOpenCommand,handleServerOpenUndoCommand,registerGuildCommands} from '../src/discord.js';
 
 const env={CLAN_TOKEN:'clan-server-open-'.repeat(3),ADMIN_TOKEN:'admin-server-open-'.repeat(3)};
 
@@ -100,6 +100,20 @@ test('Discord staging routes and admin-only command definitions include preview 
  assert.equal(commandRoute({commandName:'검증서버오픈',guildId:'guild',channelId:'other'},env),null);
 });
 
+test('Discord guild command registration uses only the staging names and leaves existing commands intact',async()=>{
+ const existing=[{name:'운영전용'}],posted=[];
+ const rest={
+  post:async(route,{body})=>{assert.equal(route,'/staging');posted.push(body);return {name:body.name,id:'mock-'+posted.length};},
+  get:async route=>{assert.equal(route,'/staging');return [...existing,...posted.map(x=>({name:x.name}))];}
+ };
+ const result=await registerGuildCommands(rest,'/staging',true);
+ assert.equal(posted.length,6);
+ assert.equal(result.registered.length,6);
+ assert.equal(result.actualNames.includes('운영전용'),true);
+ assert.ok(posted.every(c=>c.name.startsWith('검증')));
+ assert.ok(posted.some(c=>c.name==='검증서버오픈'));
+ assert.ok(posted.some(c=>c.name==='검증서버오픈취소'));
+});
 test('Discord command handlers enforce admin, preview without writes, commit once, and undo',async()=>{
  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'boss-discord-server-open-'));
  const store=new Store({url:'',file:path.join(dir,'state.json')});
@@ -117,6 +131,16 @@ test('Discord command handlers enforce admin, preview without writes, commit onc
   confirmed=true;
   const committed=await handleServerOpenCommand(i,service,new Set(['admin']));
   assert.match(committed,/적용/);
+  const server=createApp(service,env).listen(0,'127.0.0.1');
+  try{
+   await new Promise(resolve=>server.once('listening',resolve));
+   const origin='http://127.0.0.1:'+server.address().port;
+   const response=await fetch(origin+'/api/bosses',{headers:{Authorization:'Bearer '+env.CLAN_TOKEN}});
+   assert.equal(response.status,200);
+   const appBosses=await response.json();
+   const shared=await service.read();
+   assert.equal(appBosses.find(b=>b.id===shared.bosses[0].id).time,shared.bosses[0].time);
+  }finally{await new Promise(resolve=>server.close(resolve));}
   const record=(await service.read()).history.find(e=>e.action==='server-open').id;
   const duplicate=await handleServerOpenCommand(i,service,new Set(['admin']));
   assert.match(duplicate,/이미 적용/);
