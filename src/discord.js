@@ -5,21 +5,22 @@ export function commandDefinitions(testMode=false){return [
  new SlashCommandBuilder().setName('보스목록').setDescription('출현 예정·맵·멍 현황'),
  new SlashCommandBuilder().setName('보스등록').setDescription('보스 출현 시간 예약').addStringOption(o=>o.setName('이름').setDescription('보스 이름').setRequired(true)).addStringOption(o=>o.setName('시간').setDescription('한국시간 YYYY-MM-DD HH:mm').setRequired(true)),
  new SlashCommandBuilder().setName('보스').setDescription('혈맹 보스 컷·멍').addStringOption(o=>o.setName('동작').setDescription('컷 또는 멍').setRequired(true).addChoices(...choices.slice(0,2).map(name=>({name,value:name})))).addStringOption(o=>o.setName('이름').setDescription('보스 이름').setRequired(true)),
- new SlashCommandBuilder().setName('서버오픈').setDescription('관리자: 일반 보스 리젠 시간 일괄 재계산').setDefaultMemberPermissions(PermissionFlagsBits.Administrator).addStringOption(o=>o.setName('시간').setDescription('한국시간 HH:mm 또는 YYYY-MM-DD HH:mm').setRequired(true)).addBooleanOption(o=>o.setName('확인').setDescription('true면 실행, 생략하면 미리보기').setRequired(false)),
+ new SlashCommandBuilder().setName('서버오픈').setDescription('관리자: 일반 보스 리젠 시간 일괄 재계산').setDefaultMemberPermissions(PermissionFlagsBits.Administrator).addStringOption(o=>o.setName('시간').setDescription('한국시간 4자리 HHmm (예: 1501), 16 또는 15:01도 가능').setRequired(true)).addBooleanOption(o=>o.setName('확인').setDescription('true면 실행, 생략하면 미리보기').setRequired(false)),
  new SlashCommandBuilder().setName('서버오픈취소').setDescription('관리자: 서버오픈 기록 안전하게 되돌리기').setDefaultMemberPermissions(PermissionFlagsBits.Administrator).addIntegerOption(o=>o.setName('기록번호').setDescription('서버오픈 적용 시 표시된 기록 번호').setRequired(true)),
  new SlashCommandBuilder().setName('보스초기화').setDescription('관리자: 모든 예정 시간과 멍 초기화').setDefaultMemberPermissions(PermissionFlagsBits.Administrator).addBooleanOption(o=>o.setName('확인').setDescription('true로 실행 확인').setRequired(true))
  ].map(c=>{if(testMode)c.setName('검증'+c.name);return c.toJSON();});}
 export function parseKst(raw){if(!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(raw))throw Error('시간 형식: 2026-10-28 19:30 (한국시간)');const d=new Date(raw.replace(' ','T')+':00+09:00');if(!Number.isFinite(+d)||new Date(+d+9*3600000).toISOString().slice(0,16)!==raw.replace(' ','T'))throw Error('존재하지 않는 날짜·시간');return d.toISOString();}
 export function parseServerOpenKst(raw,now=Date.now()){
- if(/^\d{2}:\d{2}$/.test(raw)){
-  const [hour,minute]=raw.split(':').map(Number);
-  if(hour>23||minute>59)throw Error('존재하지 않는 날짜·시간');
-  const day=new Date(now+9*3600000).toISOString().slice(0,10);
-  let at=Date.parse(day+'T'+raw+':00+09:00');
-  if(at>now+60000)at-=86400000;
-  return new Date(at).toISOString();
- }
- return parseKst(raw);
+ const value=String(raw||'').trim();
+ if(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(value))return parseKst(value);
+ let hour,minute;
+ if(/^\d{1,2}$/.test(value)){hour=Number(value);minute=0;}
+ else if(/^\d{3,4}$/.test(value)){hour=Number(value.slice(0,-2));minute=Number(value.slice(-2));}
+ else if(/^\d{1,2}:\d{2}$/.test(value)){[hour,minute]=value.split(':').map(Number);}
+ else throw Error('시간 형식: 1501 (오후 3시 1분), 16 또는 15:01');
+ if(hour>23||minute>59)throw Error('존재하지 않는 시간 (00:00~23:59)');
+ const day=new Date(now+9*3600000).toISOString().slice(0,10);
+ return parseKst(day+' '+String(hour).padStart(2,'0')+':'+String(minute).padStart(2,'0'));
 }
 export function commandRoute(i,env){
  const testMode=env.DISCORD_TEST_MODE==='true', prefix=testMode?'검증':'';
