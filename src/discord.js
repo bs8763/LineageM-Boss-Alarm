@@ -5,9 +5,23 @@ export function commandDefinitions(testMode=false){return [
  new SlashCommandBuilder().setName('보스목록').setDescription('출현 예정·맵·멍 현황'),
  new SlashCommandBuilder().setName('보스등록').setDescription('보스 출현 시간 예약').addStringOption(o=>o.setName('이름').setDescription('보스 이름').setRequired(true)).addStringOption(o=>o.setName('시간').setDescription('한국시간 YYYY-MM-DD HH:mm').setRequired(true)),
  new SlashCommandBuilder().setName('보스').setDescription('혈맹 보스 컷·멍').addStringOption(o=>o.setName('동작').setDescription('컷 또는 멍').setRequired(true).addChoices(...choices.slice(0,2).map(name=>({name,value:name})))).addStringOption(o=>o.setName('이름').setDescription('보스 이름').setRequired(true)),
+ new SlashCommandBuilder().setName('서버오픈').setDescription('관리자: 일반 보스 리젠 시간 일괄 재계산').setDefaultMemberPermissions(PermissionFlagsBits.Administrator).addStringOption(o=>o.setName('시간').setDescription('한국시간 4자리 HHmm (예: 1501), 16 또는 15:01도 가능').setRequired(true)),
+ new SlashCommandBuilder().setName('서버오픈취소').setDescription('관리자: 서버오픈 기록 안전하게 되돌리기').setDefaultMemberPermissions(PermissionFlagsBits.Administrator).addIntegerOption(o=>o.setName('기록번호').setDescription('서버오픈 적용 시 표시된 기록 번호').setRequired(true)),
  new SlashCommandBuilder().setName('보스초기화').setDescription('관리자: 모든 예정 시간과 멍 초기화').setDefaultMemberPermissions(PermissionFlagsBits.Administrator).addBooleanOption(o=>o.setName('확인').setDescription('true로 실행 확인').setRequired(true))
  ].map(c=>{if(testMode)c.setName('검증'+c.name);return c.toJSON();});}
 export function parseKst(raw){if(!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(raw))throw Error('시간 형식: 2026-10-28 19:30 (한국시간)');const d=new Date(raw.replace(' ','T')+':00+09:00');if(!Number.isFinite(+d)||new Date(+d+9*3600000).toISOString().slice(0,16)!==raw.replace(' ','T'))throw Error('존재하지 않는 날짜·시간');return d.toISOString();}
+export function parseServerOpenKst(raw,now=Date.now()){
+ const value=String(raw||'').trim();
+ if(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(value))return parseKst(value);
+ let hour,minute;
+ if(/^\d{1,2}$/.test(value)){hour=Number(value);minute=0;}
+ else if(/^\d{3,4}$/.test(value)){hour=Number(value.slice(0,-2));minute=Number(value.slice(-2));}
+ else if(/^\d{1,2}:\d{2}$/.test(value)){[hour,minute]=value.split(':').map(Number);}
+ else throw Error('시간 형식: 1501 (오후 3시 1분), 16 또는 15:01');
+ if(hour>23||minute>59)throw Error('존재하지 않는 시간 (00:00~23:59)');
+ const day=new Date(now+9*3600000).toISOString().slice(0,10);
+ return parseKst(day+' '+String(hour).padStart(2,'0')+':'+String(minute).padStart(2,'0'));
+}
 export function commandRoute(i,env){
  const testMode=env.DISCORD_TEST_MODE==='true', prefix=testMode?'검증':'';
  const names=commandDefinitions(testMode).map(c=>c.name);
@@ -26,6 +40,26 @@ export function formatBossEvent(e,currentBoss){
  return actionNames[e.action]+' · #'+e.id+'\n보스: '+e.name+'\n맵: '+(b?.mapNumber||'미확정')+'\n처리 시간: '+timestamp(e.at)+'\n다음 출현: '+timestamp(e.time)+'\n멍 횟수: '+(b?.misses??'미확인')+'회\n등록 경로: '+source;
 }
 function format(b){return `• ${b.name} [맵 ${b.mapNumber||'미확정'}] ${b.time?`<t:${Math.floor(Date.parse(b.time)/1000)}:F>`:'미등록'} · 멍 ${b.misses}`;}
+export async function handleServerOpenCommand(i,service,admins){
+ if(!admins.has(i.user.id)&&!i.memberPermissions?.has(PermissionFlagsBits.Administrator))throw Error('관리자만 실행할 수 있습니다');
+ const openTime=parseServerOpenKst(i.options.getString('시간'));
+ const result=await service.serverOpen(openTime,`discord:${i.user.id}`);
+ return result.duplicate?'이미 적용된 서버오픈입니다. 기록 #'+result.eventId:`서버오픈 적용: 일반 보스 ${result.updated.length}종 재계산, 고정보스 유지. 기록 #${result.eventId}`;
+}
+export async function handleServerOpenUndoCommand(i,service,admins){
+ if(!admins.has(i.user.id)&&!i.memberPermissions?.has(PermissionFlagsBits.Administrator))throw Error('관리자만 실행할 수 있습니다');
+ const result=await service.undo(i.options.getInteger('기록번호'),`discord:${i.user.id}`);
+ return '서버오픈 기록 #'+result.restoredEvent+' 복구 완료 · 일반 보스 '+result.restoredBosses+'종';
+}
+export async function registerGuildCommands(rest,route,testMode=false){
+ const registered=[];
+ for(const body of commandDefinitions(testMode)){
+  const result=await rest.post(route,{body});
+  registered.push({name:result.name,id:result.id});
+ }
+ const actual=await rest.get(route);
+ return {registered,actualNames:actual.map(c=>c.name)};
+}
 export async function startDiscord(service,env=process.env){
  if(!env.DISCORD_BOT_TOKEN)return {ready:()=>false,stop:async()=>{}};
  const testMode=env.DISCORD_TEST_MODE==='true';
@@ -43,8 +77,10 @@ export async function startDiscord(service,env=process.env){
   const commandName=commandRoute(i,env);
   if(!commandName){console.warn('Discord interaction ignored:',JSON.stringify({name:i.commandName,knownCommand:commandDefinitions(testMode).some(c=>c.name===i.commandName),guildMatch:i.guildId===env.DISCORD_GUILD_ID,channelMatch:i.channelId===env.DISCORD_CHANNEL_ID}));return;}
   if(!allowed(i)){console.warn('Discord interaction rejected: wrong guild');return i.reply({content:'설정된 혈맹 서버에서만 사용 가능합니다',ephemeral:true});}
-  try{console.log('Discord interaction handling:',commandName);await i.deferReply({ephemeral:testMode||commandName==='보스초기화'});
+  try{console.log('Discord interaction handling:',commandName);await i.deferReply({ephemeral:testMode||['보스초기화','서버오픈','서버오픈취소'].includes(commandName)});
    if(commandName==='보스목록'){const s=await service.read();const list=[...s.bosses].sort((a,b)=>(a.time||'z').localeCompare(b.time||'z'));const lines=list.map(format);let chunk='⚔️ 혈맹 보스탐 (한국시간)\n';const chunks=[];for(const line of lines){if(chunk.length+line.length>1800){chunks.push(chunk);chunk='';}chunk+=line+'\n';}chunks.push(chunk);await i.editReply(chunks.shift());for(const content of chunks)await i.followUp(content);}
+   else if(commandName==='서버오픈')await i.editReply(await handleServerOpenCommand(i,service,admins));
+   else if(commandName==='서버오픈취소')await i.editReply(await handleServerOpenUndoCommand(i,service,admins));
    else if(commandName==='보스초기화'){
     if(!admins.has(i.user.id)&&!i.memberPermissions?.has(PermissionFlagsBits.Administrator))throw Error('관리자만 초기화할 수 있습니다');
     if(!i.options.getBoolean('확인'))throw Error('확인=true가 필요합니다');await service.reset(`discord:${i.user.id}`);await i.editReply('초기화 완료. 변경 전 자동 백업에서 복원할 수 있습니다.');
@@ -66,12 +102,9 @@ export async function startDiscord(service,env=process.env){
   try{const rest=new REST({version:'10'}).setToken(env.DISCORD_BOT_TOKEN);if(!env.DISCORD_GUILD_ID)throw Error('DISCORD_GUILD_ID required');
    // Only this application's guild commands are affected; never log tokens or credentials.
    const route=Routes.applicationGuildCommands(client.user.id,env.DISCORD_GUILD_ID);
-   for(const body of commandDefinitions(testMode)){
-    const registered=await rest.post(route,{body});
-    console.log('Discord command registered:',registered.name,'id:',registered.id);
-   }
-   const actual=await rest.get(route);
-   console.log('Discord guild commands after registration:',actual.map(c=>c.name).join(', '));
+   const result=await registerGuildCommands(rest,route,testMode);
+   for(const registered of result.registered)console.log('Discord command registered:',registered.name,'id:',registered.id);
+   console.log('Discord guild commands after registration:',result.actualNames.join(', '));
   }catch(e){console.error('Discord command registration failed:',e?.status||e?.code||'unknown',String(e?.message||'unknown').slice(0,300));}
  });
  const timer=setInterval(async()=>{if(testMode||publishing||!client.isReady()||!env.DISCORD_CHANNEL_ID||!env.DISCORD_GUILD_ID)return;publishing=true;
@@ -83,7 +116,7 @@ export async function startDiscord(service,env=process.env){
     const now=Date.now(),pending=s.outbox.filter(e=>!e.sentAt).slice(0,5);
     for(const e of pending){if(now-Date.parse(e.at)>(String(e.id).startsWith('alarm-')?90000:6*3600000)){e.sentAt='expired';continue;}
      try{const b=s.bosses.find(b=>b.id===e.bossId);const content=formatBossEvent(e,b);if(content===null){e.sentAt='superseded';continue;}await channel.send({content,allowedMentions:{parse:[]}});e.sentAt=new Date().toISOString();}catch{e.attempts++;break;}}
-    s.outbox=s.outbox.filter(e=>!e.sentAt).slice(-1000);return null;
+    s.outbox=s.outbox.slice(-1000);return null;
    });
   }catch{console.error('Discord delivery failed; will retry');}finally{publishing=false;}
  },10000);timer.unref();
