@@ -8,10 +8,18 @@ import {queueAlarms} from '../src/service.js';
 import {Store} from '../src/store.js';
 import {Service} from '../src/service.js';
 import {createApp} from '../server.js';
-import {commandDefinitions,commandRoute,parseKst} from '../src/discord.js';
+import {commandDefinitions,commandRoute,parseKst,parseServerOpenKst} from '../src/discord.js';
 
 const env={CLAN_TOKEN:'clan-server-open-'.repeat(3),ADMIN_TOKEN:'admin-server-open-'.repeat(3)};
 
+test('HH:mm KST server opening resolves midnight rollover and rejects invalid clock time',()=>{
+ const at=Date.parse('2026-11-01T15:05:00Z'); // 00:05 KST on Nov 2
+ assert.equal(parseServerOpenKst('23:55',at),'2026-11-01T14:55:00.000Z');
+ assert.equal(parseServerOpenKst('00:03',at),'2026-11-01T15:03:00.000Z');
+ assert.equal(parseServerOpenKst('2026-11-02 00:03',at),'2026-11-01T15:03:00.000Z');
+ assert.throws(()=>parseServerOpenKst('25:99',at),/시간/);
+ assert.throws(()=>parseServerOpenKst('2026-02-30 11:00',at),/날짜/);
+});
 test('preview, idempotency, undo and fixed boss exclusion',()=>{
  const now=Date.parse('2026-11-02T05:00:00Z');
  const opened=parseKst('2026-11-02 13:55');
