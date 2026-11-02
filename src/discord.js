@@ -39,6 +39,22 @@ export function formatBossEvent(e,currentBoss){
  return actionNames[e.action]+' · #'+e.id+'\n보스: '+e.name+'\n맵: '+(b?.mapNumber||'미확정')+'\n처리 시간: '+timestamp(e.at)+'\n다음 출현: '+timestamp(e.time)+'\n멍 횟수: '+(b?.misses??'미확인')+'회\n등록 경로: '+source;
 }
 function format(b){return `• ${b.name} [맵 ${b.mapNumber||'미확정'}] ${b.time?`<t:${Math.floor(Date.parse(b.time)/1000)}:F>`:'미등록'} · 멍 ${b.misses}`;}
+export async function handleServerOpenCommand(i,service,admins){
+ if(!admins.has(i.user.id)&&!i.memberPermissions?.has(PermissionFlagsBits.Administrator))throw Error('관리자만 실행할 수 있습니다');
+ const openTime=parseServerOpenKst(i.options.getString('시간'));
+ if(!i.options.getBoolean('확인')){
+  const plan=await service.previewServerOpen(openTime);
+  const preview=plan.updated.slice(0,8).map(b=>b.name+': '+(b.previousTime||'미등록')+' → '+b.time).join('\n');
+  return '🔎 서버오픈 미리보기 · 일반 보스 '+plan.updated.length+'종 (고정보스 제외)\n'+preview+'\n실행하려면 같은 시간에 확인=true로 다시 입력하세요.';
+ }
+ const result=await service.serverOpen(openTime,`discord:${i.user.id}`);
+ return result.duplicate?'이미 적용된 서버오픈입니다. 기록 #'+result.eventId:`서버오픈 적용: 일반 보스 ${result.updated.length}종 재계산, 고정보스 유지. 기록 #${result.eventId}`;
+}
+export async function handleServerOpenUndoCommand(i,service,admins){
+ if(!admins.has(i.user.id)&&!i.memberPermissions?.has(PermissionFlagsBits.Administrator))throw Error('관리자만 실행할 수 있습니다');
+ const result=await service.undo(i.options.getInteger('기록번호'),`discord:${i.user.id}`);
+ return '서버오픈 기록 #'+result.restoredEvent+' 복구 완료 · 일반 보스 '+result.restoredBosses+'종';
+}
 export async function startDiscord(service,env=process.env){
  if(!env.DISCORD_BOT_TOKEN)return {ready:()=>false,stop:async()=>{}};
  const testMode=env.DISCORD_TEST_MODE==='true';
@@ -58,23 +74,8 @@ export async function startDiscord(service,env=process.env){
   if(!allowed(i)){console.warn('Discord interaction rejected: wrong guild');return i.reply({content:'설정된 혈맹 서버에서만 사용 가능합니다',ephemeral:true});}
   try{console.log('Discord interaction handling:',commandName);await i.deferReply({ephemeral:testMode||['보스초기화','서버오픈','서버오픈취소'].includes(commandName)});
    if(commandName==='보스목록'){const s=await service.read();const list=[...s.bosses].sort((a,b)=>(a.time||'z').localeCompare(b.time||'z'));const lines=list.map(format);let chunk='⚔️ 혈맹 보스탐 (한국시간)\n';const chunks=[];for(const line of lines){if(chunk.length+line.length>1800){chunks.push(chunk);chunk='';}chunk+=line+'\n';}chunks.push(chunk);await i.editReply(chunks.shift());for(const content of chunks)await i.followUp(content);}
-   else if(commandName==='서버오픈'){
-    if(!admins.has(i.user.id)&&!i.memberPermissions?.has(PermissionFlagsBits.Administrator))throw Error('관리자만 실행할 수 있습니다');
-    const openTime=parseServerOpenKst(i.options.getString('시간'));
-    if(!i.options.getBoolean('확인')){
-     const plan=await service.previewServerOpen(openTime);
-     const preview=plan.updated.slice(0,8).map(b=>b.name+': '+(b.previousTime||'미등록')+' → '+b.time).join('\n');
-     await i.editReply('🔎 서버오픈 미리보기 · 일반 보스 '+plan.updated.length+'종 (고정보스 제외)\n'+preview+'\n실행하려면 같은 시간에 확인=true로 다시 입력하세요.');
-    }else{
-     const result=await service.serverOpen(openTime,`discord:${i.user.id}`);
-     await i.editReply(result.duplicate?'이미 적용된 서버오픈입니다. 기록 #'+result.eventId:`서버오픈 적용: 일반 보스 ${result.updated.length}종 재계산, 고정보스 유지. 기록 #${result.eventId}`);
-    }
-   }
-   else if(commandName==='서버오픈취소'){
-    if(!admins.has(i.user.id)&&!i.memberPermissions?.has(PermissionFlagsBits.Administrator))throw Error('관리자만 실행할 수 있습니다');
-    const result=await service.undo(i.options.getInteger('기록번호'),`discord:${i.user.id}`);
-    await i.editReply('서버오픈 기록 #'+result.restoredEvent+' 복구 완료 · 일반 보스 '+result.restoredBosses+'종');
-   }
+   else if(commandName==='서버오픈')await i.editReply(await handleServerOpenCommand(i,service,admins));
+   else if(commandName==='서버오픈취소')await i.editReply(await handleServerOpenUndoCommand(i,service,admins));
    else if(commandName==='보스초기화'){
     if(!admins.has(i.user.id)&&!i.memberPermissions?.has(PermissionFlagsBits.Administrator))throw Error('관리자만 초기화할 수 있습니다');
     if(!i.options.getBoolean('확인'))throw Error('확인=true가 필요합니다');await service.reset(`discord:${i.user.id}`);await i.editReply('초기화 완료. 변경 전 자동 백업에서 복원할 수 있습니다.');
