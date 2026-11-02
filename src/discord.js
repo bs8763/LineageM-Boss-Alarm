@@ -49,8 +49,8 @@ export async function startDiscord(service,env=process.env){
    else if(commandName==='서버오픈'){
     if(!admins.has(i.user.id)&&!i.memberPermissions?.has(PermissionFlagsBits.Administrator))throw Error('관리자만 실행할 수 있습니다');
     if(!i.options.getBoolean('확인'))throw Error('확인=true가 필요합니다');
-    const result=await service.serverOpen(parseKst(i.options.getString('시간')),\`discord:\${i.user.id}\`);
-    await i.editReply(\`서버오픈 적용: 일반 보스 \${result.updated.length}종 재계산, 고정보스 유지. 기록 #\${result.eventId}\`);
+    const result=await service.serverOpen(parseKst(i.options.getString('시간')),`discord:${i.user.id}`);
+    await i.editReply(`서버오픈 적용: 일반 보스 ${result.updated.length}종 재계산, 고정보스 유지. 기록 #${result.eventId}`);
    }
    else if(commandName==='보스초기화'){
     if(!admins.has(i.user.id)&&!i.memberPermissions?.has(PermissionFlagsBits.Administrator))throw Error('관리자만 초기화할 수 있습니다');
