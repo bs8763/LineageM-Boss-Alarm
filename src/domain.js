@@ -81,3 +81,25 @@ export function validateSnapshot(raw){
 export function restore(s,raw,actor,now=Date.now()){const clean=validateSnapshot(raw);for(const b of clean.bosses){const old=findBoss(s,b.id);Object.assign(old,{...b,version:old.version});event(s,old,'restore',actor,now);}return s;}
 export function migrateLegacy(rows){const s=initialState();if(!Array.isArray(rows))throw new DomainError('기존 보스 배열 필요');for(const row of rows){const b=s.bosses.find(b=>b.name===(row.name==='가스트'?'카스트':row.name));if(!b)throw new DomainError(`기준표에 없는 기존 보스: ${String(row.name).slice(0,60)} (원본을 보존하고 관리자 매핑 필요)`);b.time=iso(row.time);}return s;}
 export function undo(s,eventId,actor,now=Date.now()){const e=s.history.find(e=>e.id===eventId);if(!e?.previous)throw new DomainError('복구 가능한 컷·멍·등록 기록을 선택하세요');const b=findBoss(s,e.bossId);if(e.name!==b.name&&!(e.name==='가스트'&&b.name==='카스트'))throw new DomainError('보스표가 변경된 기록은 바로 복구할 수 없습니다. 원본 백업을 확인하세요',409);const later=s.history.some(x=>x.bossId===b.id&&x.id>e.id);if(later)throw new DomainError('후속 기록이 있어 바로 복구할 수 없습니다. 백업을 확인하세요',409);Object.assign(b,e.previous);event(s,b,'undo',actor,now,{restoredEvent:e.id});return b;}
+
+export function serverOpen(s,openTime,actor,now=Date.now()){
+ const opened=Date.parse(iso(openTime));
+ if(opened>now+60000)throw new DomainError('서버오픈 시간은 미래일 수 없습니다');
+ const previous=[],updated=[];
+ for(const b of s.bosses){
+  if(b.fixedKstMinutes?.length||!b.intervalMinutes)continue;
+  previous.push({id:b.id,time:b.time,misses:b.misses,lastAction:b.lastAction,version:b.version});
+  b.time=new Date(opened+b.intervalMinutes*60000).toISOString();
+  b.lastAction='server-open';b.version++;
+  updated.push({id:b.id,name:b.name,time:b.time});
+ }
+ if(!updated.length)throw new DomainError('변경할 일반 보스가 없습니다');
+ s.revision++;
+ const id=s.revision;
+ s.history.push({id,action:'server-open',actor,at:new Date(now).toISOString(),openTime:new Date(opened).toISOString(),previous,updated});
+ s.history=s.history.slice(-1000);
+ const affected=new Set(updated.map(x=>x.id));
+ s.outbox=s.outbox.filter(e=>!affected.has(e.bossId)||e.sentAt);
+ s.alarmKeys=(s.alarmKeys||[]).filter(k=>![...affected].some(id=>k.startsWith('alarm-'+id+'-')));
+ return {eventId:id,openTime:new Date(opened).toISOString(),updated};
+}
