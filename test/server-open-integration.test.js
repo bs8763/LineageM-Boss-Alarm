@@ -102,13 +102,14 @@ test('undo refuses to overwrite subsequent boss changes and rejects future openi
  assert.throws(()=>serverOpen(s,'2026-11-03T05:00:00.000Z','ci',now),DomainError);
 });
 
-test('Discord staging routes and admin-only command definitions include preview and undo',()=>{
+test('Discord staging routes and admin-only command definitions apply immediately and support undo',()=>{
  const defs=commandDefinitions();
  const server=defs.find(c=>c.name==='서버오픈'),rollback=defs.find(c=>c.name==='서버오픈취소');
  assert.ok(server);assert.ok(rollback);
  assert.equal(server.default_member_permissions,'8');
  assert.equal(rollback.default_member_permissions,'8');
- assert.equal(server.options.find(o=>o.name==='확인').required,false);
+ assert.equal(server.options.find(o=>o.name==='시간').required,true);
+ assert.equal(server.options.some(o=>o.name==='확인'),false);
  const env={DISCORD_TEST_MODE:'true',DISCORD_GUILD_ID:'guild',DISCORD_CHANNEL_ID:'channel'};
  assert.equal(commandRoute({commandName:'검증서버오픈',guildId:'guild',channelId:'channel'},env),'서버오픈');
  assert.equal(commandRoute({commandName:'검증서버오픈취소',guildId:'guild',channelId:'channel'},env),'서버오픈취소');
@@ -129,23 +130,19 @@ test('Discord guild command registration uses only the staging names and leaves 
  assert.ok(posted.some(c=>c.name==='검증서버오픈'));
  assert.ok(posted.some(c=>c.name==='검증서버오픈취소'));
 });
-test('Discord command handlers enforce admin, preview without writes, commit once, and undo',async()=>{
+test('Discord command handlers enforce admin, apply without confirmation, prevent duplicates, and undo',async()=>{
  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'boss-discord-server-open-'));
  const store=new Store({url:'',file:path.join(dir,'state.json')});
  try{
   await store.init();const service=new Service(store);
   const now=Date.now(),time=new Date(now-300000+9*3600000).toISOString().slice(11,16);
-  let confirmed=false;
   const i={user:{id:'admin'},memberPermissions:{has:()=>false},
-   options:{getString:()=>time,getBoolean:()=>confirmed,getInteger:()=>record}};
+   options:{getString:()=>time,getBoolean:()=>{throw Error('confirmation must not be queried');},getInteger:()=>record}};
   await assert.rejects(handleServerOpenCommand(i,service,new Set()),/관리자/);
   const before=await service.read();
-  const preview=await handleServerOpenCommand(i,service,new Set(['admin']));
-  assert.match(preview,/미리보기/);
-  assert.deepEqual(await service.read(),before);
-  confirmed=true;
   const committed=await handleServerOpenCommand(i,service,new Set(['admin']));
   assert.match(committed,/적용/);
+  assert.notDeepEqual(await service.read(),before);
   const server=createApp(service,env).listen(0,'127.0.0.1');
   try{
    await new Promise(resolve=>server.once('listening',resolve));
