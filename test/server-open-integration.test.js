@@ -8,7 +8,7 @@ import {queueAlarms} from '../src/service.js';
 import {Store} from '../src/store.js';
 import {Service} from '../src/service.js';
 import {createApp} from '../server.js';
-import {commandDefinitions,commandRoute,parseKst,parseServerOpenKst} from '../src/discord.js';
+import {commandDefinitions,commandRoute,parseKst,parseServerOpenKst,handleServerOpenCommand,handleServerOpenUndoCommand} from '../src/discord.js';
 
 const env={CLAN_TOKEN:'clan-server-open-'.repeat(3),ADMIN_TOKEN:'admin-server-open-'.repeat(3)};
 
@@ -100,6 +100,31 @@ test('Discord staging routes and admin-only command definitions include preview 
  assert.equal(commandRoute({commandName:'검증서버오픈',guildId:'guild',channelId:'other'},env),null);
 });
 
+test('Discord command handlers enforce admin, preview without writes, commit once, and undo',async()=>{
+ const dir=await fs.mkdtemp(path.join(os.tmpdir(),'boss-discord-server-open-'));
+ const store=new Store({url:'',file:path.join(dir,'state.json')});
+ try{
+  await store.init();const service=new Service(store);
+  const now=Date.now(),time=new Date(now-300000+9*3600000).toISOString().slice(11,16);
+  let confirmed=false;
+  const i={user:{id:'admin'},memberPermissions:{has:()=>false},
+   options:{getString:()=>time,getBoolean:()=>confirmed,getInteger:()=>record}};
+  await assert.rejects(handleServerOpenCommand(i,service,new Set()),/관리자/);
+  const before=await service.read();
+  const preview=await handleServerOpenCommand(i,service,new Set(['admin']));
+  assert.match(preview,/미리보기/);
+  assert.deepEqual(await service.read(),before);
+  confirmed=true;
+  const committed=await handleServerOpenCommand(i,service,new Set(['admin']));
+  assert.match(committed,/적용/);
+  const record=(await service.read()).history.find(e=>e.action==='server-open').id;
+  const duplicate=await handleServerOpenCommand(i,service,new Set(['admin']));
+  assert.match(duplicate,/이미 적용/);
+  await assert.rejects(handleServerOpenUndoCommand(i,service,new Set()),/관리자/);
+  const undone=await handleServerOpenUndoCommand(i,service,new Set(['admin']));
+  assert.match(undone,/복구 완료/);
+ }finally{await store.close();await fs.rm(dir,{recursive:true,force:true});}
+});
 test('local persistence and shared HTTP app state reflect server-open and safe undo',async()=>{
  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'boss-server-open-'));
  const store=new Store({url:'',file:path.join(dir,'state.json')});
