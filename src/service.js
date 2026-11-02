@@ -1,4 +1,4 @@
-import {advance,act,configure,reset,restore,migrateLegacy,undo,DomainError} from './domain.js';
+import {advance,act,configure,reset,restore,migrateLegacy,undo,serverOpen,DomainError} from './domain.js';
 export class Service {
  constructor(store){this.store=store;}
  async tick(){const bosses=await this.store.schedule(),now=Date.now();const due=bosses.some(b=>{if(!b.time)return false;const t=Date.parse(b.time);return ((b.intervalMinutes||b.fixedKstMinutes.length)&&now>=t+30*60000)||[10,5,1].some(m=>now>=t-m*60000&&now-(t-m*60000)<=90000);});if(due)await this.read();}
@@ -20,6 +20,7 @@ export class Service {
  async reset(actor){return this.store.transaction(s=>reset(s,actor),{backup:true,reason:'reset'});}
  async restore(raw,actor){return this.store.transaction(s=>restore(s,raw,actor),{backup:true,reason:'restore'});}
  async importLegacy(rows,actor){return this.store.transaction(s=>{if(s.history.length||s.bosses.some(b=>b.time))throw new DomainError('이미 데이터가 있습니다. 먼저 백업 후 복구 기능을 사용하세요',409);return restore(s,migrateLegacy(rows),actor);},{backup:true,reason:'legacy-import'});}
+ async serverOpen(time,actor){return this.store.transaction(s=>serverOpen(s,time,actor),{backup:true,reason:'server-open'});}
  async undo(id,actor){return this.store.transaction(s=>{advance(s);return undo(s,id,actor);},{backup:true,reason:'undo'});}
 }
 
