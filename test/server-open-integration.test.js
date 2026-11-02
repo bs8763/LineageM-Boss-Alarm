@@ -75,6 +75,18 @@ test('server-open preserves pending cut events, supersedes old alarms and restor
  assert.equal(b.time,oldTime);
 });
 
+test('rescheduled boss creates exactly one 10/5/1-minute alarm per window',()=>{
+ const now=Date.parse('2026-11-02T05:00:00Z'),s=initialState();
+ const b=s.bosses.find(b=>b.intervalMinutes);
+ const opened=new Date(now-(b.intervalMinutes-10)*60000).toISOString();
+ serverOpen(s,opened,'ci',now);
+ queueAlarms(s,now);queueAlarms(s,now);
+ queueAlarms(s,now+5*60000);queueAlarms(s,now+5*60000);
+ queueAlarms(s,now+9*60000);queueAlarms(s,now+9*60000);
+ const alarms=s.outbox.filter(e=>e.bossId===b.id&&String(e.id).startsWith('alarm-'));
+ assert.deepEqual(alarms.map(e=>e.action),['10분 전','5분 전','1분 전']);
+ assert.equal(new Set(alarms.map(e=>e.id)).size,3);
+});
 test('undo refuses to overwrite subsequent boss changes and rejects future opening',()=>{
  const now=Date.parse('2026-11-02T05:00:00Z'),s=initialState();
  const opening='2026-11-02T04:55:00.000Z';
