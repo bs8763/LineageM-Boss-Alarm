@@ -52,8 +52,8 @@ export async function startDiscord(service,env=process.env){
     const openTime=parseKst(i.options.getString('시간'));
     if(!i.options.getBoolean('확인')){
      const plan=await service.previewServerOpen(openTime);
-     const preview=plan.updated.slice(0,8).map(b=>b.name+': '+(b.previousTime||'미등록')+' → '+b.time).join('\\n');
-     await i.editReply('🔎 서버오픈 미리보기 · 일반 보스 '+plan.updated.length+'종 (고정보스 제외)\\n'+preview+'\\n실행하려면 같은 시간에 확인=true로 다시 입력하세요.');
+     const preview=plan.updated.slice(0,8).map(b=>b.name+': '+(b.previousTime||'미등록')+' → '+b.time).join('\n');
+     await i.editReply('🔎 서버오픈 미리보기 · 일반 보스 '+plan.updated.length+'종 (고정보스 제외)\n'+preview+'\n실행하려면 같은 시간에 확인=true로 다시 입력하세요.');
     }else{
      const result=await service.serverOpen(openTime,`discord:${i.user.id}`);
      await i.editReply(result.duplicate?'이미 적용된 서버오픈입니다. 기록 #'+result.eventId:`서버오픈 적용: 일반 보스 ${result.updated.length}종 재계산, 고정보스 유지. 기록 #${result.eventId}`);
