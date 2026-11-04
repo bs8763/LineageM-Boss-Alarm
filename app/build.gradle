@@ -15,6 +15,10 @@ android {
     }
     buildTypes {
         release {
+            // Never publish an unsigned or debug-signed APK as a release.
+            if (!providers.environmentVariable('ANDROID_KEYSTORE_PATH').orNull) {
+                throw new GradleException('Release signing keystore is required: set ANDROID_KEYSTORE_PATH and signing credentials')
+            }
             signingConfig signingConfigs.release
             minifyEnabled false
         }
