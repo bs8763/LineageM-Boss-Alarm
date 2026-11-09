@@ -1,4 +1,5 @@
 import {handleBossMessage} from './discord-text.js';
+import {findBoss} from './domain.js';
 import {Client,GatewayIntentBits,Events,SlashCommandBuilder,REST,Routes,PermissionFlagsBits} from 'discord.js';
 const choices=['컷','멍','예약','초기화'];
 export function commandDefinitions(testMode=false){return [
@@ -20,7 +21,7 @@ export function formatBossEvent(e,currentBoss){
  if(String(e.id||'').startsWith('alarm-')){const match=String(e.action||'').match(/^(10|5|1)분 전$/);if(!match)return null;const time=e.time?'<t:'+Math.floor(Date.parse(e.time)/1000)+':t>':'미등록';return `⚔️ **${e.name} · 출현 ${match[1]}분 전**\n🗺️ 맵 ${b?.mapNumber||'미확정'}\n🕒 출현 예정: ${time}`;}
  const actionNames={cut:'⚔️ 보스 컷 완료',miss:'🌙 보스 멍 처리',schedule:'📅 보스 시간 등록'};
  const timestamp=t=>t?'<t:'+Math.floor(Date.parse(t)/1000)+':F>':'미등록';
- if(e.action==='auto-miss')return '⏰ 보스 자동 멍 처리 · #'+e.id+'\n보스: '+e.name+'\n맵: '+(b?.mapNumber||'미확정')+'\n이전 출현 예정: '+timestamp(e.previousTime)+'\n미입력 경과: 30분 이상\n자동 멍 처리: '+(e.count||1)+'회\n누적 멍 횟수: '+(b?.misses??'미확인')+'회\n다음 예상 출현: '+timestamp(e.time)+'\n등록 경로: 시스템 자동 처리';
+ if(e.action==='auto-miss')return '⏰ 보스 자동 멍 처리 · #'+e.id+'\n보스: '+e.name+'\n맵: '+(b?.mapNumber||'미확정')+'\n이전 출현 예정: '+timestamp(e.previousTime)+'\n미입력 경과: 10분 이상\n자동 멍 처리: '+(e.count||1)+'회\n누적 멍 횟수: '+(b?.misses??'미확인')+'회\n다음 예상 출현: '+timestamp(e.time)+'\n등록 경로: 시스템 자동 처리';
  if(!actionNames[e.action])return '⚔️ #'+e.id+' '+e.name+' · '+e.action+'\n맵 '+(b?.mapNumber||'미확정')+' · '+timestamp(e.time);
  const source=String(e.actor||'').startsWith('web:')?'안드로이드 앱 / 웹':'디스코드';
  return actionNames[e.action]+' · #'+e.id+'\n보스: '+e.name+'\n맵: '+(b?.mapNumber||'미확정')+'\n처리 시간: '+timestamp(e.at)+'\n다음 출현: '+timestamp(e.time)+'\n멍 횟수: '+(b?.misses??'미확인')+'회\n등록 경로: '+source;
@@ -49,7 +50,7 @@ export async function startDiscord(service,env=process.env){
     if(!admins.has(i.user.id)&&!i.memberPermissions?.has(PermissionFlagsBits.Administrator))throw Error('관리자만 초기화할 수 있습니다');
     if(!i.options.getBoolean('확인'))throw Error('확인=true가 필요합니다');await service.reset(`discord:${i.user.id}`);await i.editReply('초기화 완료. 변경 전 자동 백업에서 복원할 수 있습니다.');
    }else if(['보스','보스등록'].includes(commandName)){
-    const s=await service.read(),name=i.options.getString('이름'),b=s.bosses.find(b=>b.name===name||b.id===name);if(!b)throw Error('보스목록에 있는 정확한 이름을 입력하세요');
+    const s=await service.read(),name=i.options.getString('이름');let b;try{b=findBoss(s,name);}catch{throw Error('보스목록에 있는 정확한 이름 또는 등록된 약칭을 입력하세요');}if(!b)throw Error('보스목록에 있는 정확한 이름을 입력하세요');
     const action=commandName==='보스등록'?'schedule':i.options.getString('동작')==='컷'?'cut':'miss';
     const result=await service.action({id:b.id,action,time:action==='schedule'?parseKst(i.options.getString('시간')):undefined,expectedVersion:b.version,actor:`discord:${i.user.id}`});await i.editReply(`${testMode?'🧪 검증 DB · ':''}✅ ${format(result)}`);if(testMode)console.log('Discord verification action committed:',action);
    }
