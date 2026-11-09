@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {initialState,advance,act,configure,reset,restore,validateSnapshot,migrateLegacy,undo,GRACE} from '../src/domain.js';
+import {initialState,advance,act,configure,reset,restore,validateSnapshot,migrateLegacy,undo,GRACE,findBoss} from '../src/domain.js';
 const T=Date.parse('2026-10-28T00:00:00Z');
 function scheduled(){const s=initialState();act(s,{id:'boss-01',action:'schedule',time:new Date(T).toISOString()},T);return s;}
 test('31 unique bosses; ambiguous data does not receive an invented interval',()=>{const s=initialState();assert.equal(s.bosses.length,31);assert.equal(new Set(s.bosses.map(b=>b.id)).size,31);assert.equal(s.bosses.find(b=>b.name==='네크로맨서').intervalMinutes,null);assert.throws(()=>act(s,{id:'네크로맨서',action:'cut'},T));});
@@ -17,3 +17,5 @@ test('API rejects rollover dates and config patches preserve an unknown interval
 test('clan boss reference includes 카스트 and 네크로맨서, not 가스트 or 베리스',()=>{const bosses=initialState().bosses;assert.equal(bosses.length,31);assert.equal(bosses.find(b=>b.name==='카스트')?.mapNumber,'46');assert.equal(bosses.find(b=>b.name==='네크로맨서')?.mapNumber,'18');assert.equal(bosses.find(b=>b.name==='네크로맨서')?.intervalMinutes,null);assert.ok(!bosses.some(b=>['가스트','베리스'].includes(b.name)));});
 
 test('바포 nickname resolves to 바포메트 for cut and miss',()=>{const s=initialState();const t=T;act(s,{id:'바포',action:'schedule',time:new Date(t).toISOString()},t);act(s,{id:'바포',action:'miss'},t);const b=s.bosses.find(b=>b.name==='바포메트');assert.equal(b.misses,1);assert.equal(s.bosses.filter(x=>x.name==='바포메트').length,1);act(s,{id:'바포',action:'cut'},t);assert.equal(b.misses,0);});
+
+test('boss shorthand resolves unique aliases but rejects ambiguous prefixes',()=>{const s=initialState();for(const [alias,name] of [['바포','바포메트'],['산두','산적두목'],['감데','감시자 데몬'],['리칸','리칸트'],['피닉','피닉스']]){const b=s.bosses.find(x=>x.name===name);assert.ok(b);assert.equal(findBoss(s,alias).id,b.id);}assert.throws(()=>findBoss(s,'네크'),/겹칩니다/); });
