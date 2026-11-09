@@ -11,7 +11,29 @@ export function iso(value){
 }
 export function nextFixed(minutes,after){const day=86400000,kst=after+9*3600000,base=Math.floor(kst/day)*day-9*3600000;return Math.min(...minutes.map(m=>{let t=base+m*60000; if(t<=after)t+=day;return t;}));}
 export function nextSpawn(b,after){if(b.fixedKstMinutes.length)return nextFixed(b.fixedKstMinutes,after);if(b.intervalMinutes)return after+b.intervalMinutes*60000;throw new DomainError('리젠 시간 또는 고정 시간을 먼저 설정하세요');}
-export function findBoss(s,id){const name=id==='바포'?'바포메트':id;const b=s.bosses.find(b=>b.id===name||b.name===name);if(!b)throw new DomainError('보스를 찾을 수 없습니다',404);return b;}
+const BOSS_ALIASES = Object.freeze({
+ '서드':'서드','북드':'북드','카파':'카파','녹샤':'녹샤','빨샤':'빨샤','웜':'웜','이프':'이프',
+ '바포':'바포메트','바포메트':'바포메트','케레':'케레','대흑':'대흑','동드':'동드','중드':'중드',
+ '자크':'자크','산두':'산적두목','산적':'산적두목','스피':'스피','마요':'마요','개미':'개미',
+ '네크':'네크로스','네크로':'네크로스','아르':'아르피어','데스':'데스','네크맨':'네크로맨서',
+ '암대':'암흑대장로','오르':'오르쿠스','거드':'거드','감데':'감시자 데몬','도펠':'도펠',
+ '가스트':'카스트','카스트':'카스트','리칸':'리칸트','피닉':'피닉스','에자':'에자','커츠':'커츠'
+});
+export function findBoss(s,id){
+ const name=typeof id==='string'?id.trim().replace(/\\s+/gu,' '):id;
+ let b=s.bosses.find(b=>b.id===name||b.name===name);
+ if(!b&&typeof name==='string'){
+  const alias=BOSS_ALIASES[name];
+  if(alias)b=s.bosses.find(x=>x.name===alias);
+  if(!b){
+   const matches=s.bosses.filter(x=>x.name.startsWith(name));
+   if(name.length>=2&&matches.length===1)b=matches[0];
+   else if(matches.length>1)throw new DomainError('약칭이 여러 보스와 겹칩니다. 이름을 더 길게 입력하세요');
+  }
+ }
+ if(!b)throw new DomainError('보스를 찾을 수 없습니다',404);
+ return b;
+}
 function event(s,b,action,actor,now,details={}){s.revision++;b.version++;const e={id:s.revision,bossId:b.id,name:b.name,action,actor,at:new Date(now).toISOString(),...details};s.history.push(e);s.history=s.history.slice(-1000);s.outbox.push({...e,bossSnapshot:{id:b.id,name:b.name,mapNumber:b.mapNumber,time:b.time,misses:b.misses,lastAction:b.lastAction,version:b.version},attempts:0});s.outbox=s.outbox.slice(-1000);return e;}
 export function advance(s,now=Date.now()){
  for(const b of s.bosses){if(!b.time||(!b.intervalMinutes&&!b.fixedKstMinutes.length))continue;
