@@ -15,3 +15,5 @@ test('10/5-minute alarms are durable, deduplicated and skip missed cold-start wi
 test('API rejects rollover dates and config patches preserve an unknown interval',()=>{const s=initialState();assert.throws(()=>act(s,{id:'서드',action:'schedule',time:'2026-02-30T00:00:00Z'}));configure(s,'네크로맨서',{mapNumber:'미확정'},'admin');assert.equal(s.bosses.find(b=>b.name==='네크로맨서').intervalMinutes,null);});
 
 test('clan boss reference includes 카스트 and 네크로맨서, not 가스트 or 베리스',()=>{const bosses=initialState().bosses;assert.equal(bosses.length,31);assert.equal(bosses.find(b=>b.name==='카스트')?.mapNumber,'46');assert.equal(bosses.find(b=>b.name==='네크로맨서')?.mapNumber,'18');assert.equal(bosses.find(b=>b.name==='네크로맨서')?.intervalMinutes,null);assert.ok(!bosses.some(b=>['가스트','베리스'].includes(b.name)));});
+
+test('바포 nickname resolves to 바포메트 for cut and miss',()=>{const s=initialState();const t=T;act(s,{id:'바포',action:'schedule',time:new Date(t).toISOString()},t);act(s,{id:'바포',action:'miss'},t);const b=s.bosses.find(b=>b.name==='바포메트');assert.equal(b.misses,1);assert.equal(s.bosses.filter(x=>x.name==='바포메트').length,1);act(s,{id:'바포',action:'cut'},t);assert.equal(b.misses,0);});
