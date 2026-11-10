@@ -67,7 +67,7 @@ jobs:
           retention-days: 14
 
   release:
-    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/integration/server-open-auto-miss-aliases')
+    if: ((github.event_name == 'workflow_dispatch' || github.event_name == 'push') && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/integration/server-open-auto-miss-aliases')) || (github.event_name == 'pull_request' && github.head_ref == 'integration/server-open-auto-miss-aliases')
     needs: test
     runs-on: ubuntu-latest
     timeout-minutes: 20
