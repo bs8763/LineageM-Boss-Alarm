@@ -24,7 +24,7 @@ test('old v2 snapshots are normalized without changing the original file and can
  const wrong=initialState();wrong.bosses[20].name='다른 보스';assert.throws(()=>validateSnapshot(wrong));
 });
 test('old names in legacy imports and history cannot silently restore a different boss',()=>{
- assert.equal(migrateLegacy([{name:'가스트',time:'2026-10-28T12:00:00Z'}]).bosses[26].time,'2026-10-28T12:00:00.000Z');
+ assert.equal(migrateLegacy([{name:'카스트',time:'2026-10-28T12:00:00Z'}]).bosses[26].time,'2026-10-28T12:00:00.000Z');
  assert.throws(()=>migrateLegacy([{name:'베리스',time:'2026-10-28T12:00:00Z'}]));
  const s=initialState();s.history.push({id:1,bossId:'boss-21',name:'베리스',previous:{time:'2026-10-28T12:00:00Z',misses:1,lastAction:'cut'}});assert.throws(()=>undo(s,1,'admin',T),e=>e.status===409);
 });
