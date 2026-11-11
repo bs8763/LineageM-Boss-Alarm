@@ -34,7 +34,7 @@ export function formatBossEvent(e,currentBoss){
  if(String(e.id||'').startsWith('alarm-')){const match=String(e.action||'').match(/^(10|5|1)분 전$/);if(!match)return null;const time=e.time?'<t:'+Math.floor(Date.parse(e.time)/1000)+':t>':'미등록';return `⚔️ **${e.name} · 출현 ${match[1]}분 전**\n🗺️ 맵 ${b?.mapNumber||'미확정'}\n🕒 출현 예정: ${time}`;}
  const actionNames={cut:'⚔️ 보스 컷 완료',miss:'🌙 보스 멍 처리',schedule:'📅 보스 시간 등록'};
  const timestamp=t=>t?'<t:'+Math.floor(Date.parse(t)/1000)+':F>':'미등록';
- if(e.action==='auto-miss')return '⏰ 보스 자동 멍 처리 · #'+e.id+'\n보스: '+e.name+'\n맵: '+(b?.mapNumber||'미확정')+'\n이전 출현 예정: '+timestamp(e.previousTime)+'\n미입력 경과: 30분 이상\n자동 멍 처리: '+(e.count||1)+'회\n누적 멍 횟수: '+(b?.misses??'미확인')+'회\n다음 예상 출현: '+timestamp(e.time)+'\n등록 경로: 시스템 자동 처리';
+ if(e.action==='auto-miss')return '⏰ 보스 자동 멍 처리 · #'+e.id+'\n보스: '+e.name+'\n맵: '+(b?.mapNumber||'미확정')+'\n이전 출현 예정: '+timestamp(e.previousTime)+'\n미입력 경과: 10분 이상\n자동 멍 처리: '+(e.count||1)+'회\n누적 멍 횟수: '+(b?.misses??'미확인')+'회\n다음 예상 출현: '+timestamp(e.time)+'\n등록 경로: 시스템 자동 처리';
  if(!actionNames[e.action])return '⚔️ #'+e.id+' '+e.name+' · '+e.action+'\n맵 '+(b?.mapNumber||'미확정')+' · '+timestamp(e.time);
  const source=String(e.actor||'').startsWith('web:')?'안드로이드 앱 / 웹':'디스코드';
  return actionNames[e.action]+' · #'+e.id+'\n보스: '+e.name+'\n맵: '+(b?.mapNumber||'미확정')+'\n처리 시간: '+timestamp(e.at)+'\n다음 출현: '+timestamp(e.time)+'\n멍 횟수: '+(b?.misses??'미확인')+'회\n등록 경로: '+source;
