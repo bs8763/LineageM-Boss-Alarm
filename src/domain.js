@@ -1,5 +1,5 @@
 import { CATALOG } from './catalog.js';
-export const GRACE = 30*60*1000;
+export const GRACE = 10*60*1000;
 export class DomainError extends Error { constructor(message,status=400){super(message);this.status=status;} }
 export function initialState(){return {schemaVersion:2,catalogVersion:2,revision:0,bosses:CATALOG.map(b=>({...b,time:null,misses:0,lastAction:null,version:0})),history:[],outbox:[]};}
 export function iso(value){
