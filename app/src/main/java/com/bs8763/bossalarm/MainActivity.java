@@ -32,7 +32,7 @@ public class MainActivity extends Activity {
             return;
         }
         board = new WebView(this);
-        board.setBackgroundColor(0xff101827);
+        board.setBackgroundColor(0xff09090c);
         board.getSettings().setJavaScriptEnabled(true);
         board.getSettings().setDomStorageEnabled(true);
         board.getSettings().setAllowFileAccess(false);
