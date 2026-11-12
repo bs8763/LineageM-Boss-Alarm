@@ -96,3 +96,13 @@ button.danger{background:#752222}
 header{padding-left:96px;min-height:112px}
 header::after{content:"";position:absolute;top:30px;left:17px;width:64px;height:64px;background:url('/boss-icon.svg') center/contain no-repeat;border:1px solid #8b5738;border-radius:13px;box-shadow:0 2px 10px #000b}
 @media(max-width:480px){header{padding-left:82px}header::after{top:27px;left:12px;width:56px;height:56px}}
+
+/* OneStore palette consistency: remove remaining blue temporary controls. */
+:root{--surface:#171217;--surface-raised:#21171a;--border:#624039;--muted:#c4a99a}
+button.secondary{background:linear-gradient(#47312b,#251a1b);border-color:#765044;color:#e8d2b6}
+#board nav{background:#100c0ff2}
+#board nav button.secondary{background:linear-gradient(#47312b,#251a1b);border-color:#765044}
+.boss .actions button:nth-child(2){background:linear-gradient(#654329,#39251e);border-color:#91633e;color:#f4d4a6}
+.boss details>button{background:linear-gradient(#69482b,#3c281d);border-color:#9b754a;color:#f4d9ae}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline-color:#e9c27f}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
