@@ -87,3 +87,7 @@ button.danger{background:#752222}
 .boss details>button{background:linear-gradient(#27714b,#185235);border-color:#41976a}
 #status{color:#c7a797}
 @media(max-width:480px){main{padding:8px 8px 72px}header{padding:25px 14px 16px}#board nav input{flex-basis:100%}.boss{padding:11px}.boss .actions button{min-height:42px}}
+
+/* Bottom navigation for the original clan dashboard layout */
+.bottom-nav{position:fixed!important;bottom:0;left:50%;transform:translateX(-50%);width:min(100%,860px);z-index:30;display:flex!important;justify-content:space-around;gap:0!important;padding:6px max(8px,env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom))!important;background:#120e12f5!important;border-top:1px solid #9c5a39!important;box-shadow:0 -6px 20px #000a;backdrop-filter:blur(12px)}
+.bottom-nav button{display:flex;flex:1;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:48px;margin:0 2px;padding:4px 2px;border:0;background:transparent;box-shadow:none;color:#d4ae7b;font-size:20px}.bottom-nav button span{font-size:10px;white-space:nowrap;color:#e6d1b6}.bottom-nav button.active{background:#48201d;border-bottom:2px solid #d8aa6e}.bottom-nav button[hidden]{display:none!important}#board .boss-group,#historySection,#admin{scroll-margin-top:95px}main{padding-bottom:calc(95px + env(safe-area-inset-bottom))}
