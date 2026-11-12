@@ -1,4 +1,5 @@
 import {handleBossMessage} from './discord-text.js';
+import {findBoss} from './domain.js';
 import {Client,GatewayIntentBits,Events,SlashCommandBuilder,REST,Routes,PermissionFlagsBits} from 'discord.js';
 const choices=['컷','멍','예약','초기화'];
 export function commandDefinitions(testMode=false){return [
@@ -85,7 +86,8 @@ export async function startDiscord(service,env=process.env){
     if(!admins.has(i.user.id)&&!i.memberPermissions?.has(PermissionFlagsBits.Administrator))throw Error('관리자만 초기화할 수 있습니다');
     if(!i.options.getBoolean('확인'))throw Error('확인=true가 필요합니다');await service.reset(`discord:${i.user.id}`);await i.editReply('초기화 완료. 변경 전 자동 백업에서 복원할 수 있습니다.');
    }else if(['보스','보스등록'].includes(commandName)){
-    const s=await service.read(),name=i.options.getString('이름'),b=s.bosses.find(b=>b.name===name||b.id===name);if(!b)throw Error('보스목록에 있는 정확한 이름을 입력하세요');
+    const s=await service.read(),name=i.options.getString('이름');
+    const b=findBoss(s,name);
     const action=commandName==='보스등록'?'schedule':i.options.getString('동작')==='컷'?'cut':'miss';
     const result=await service.action({id:b.id,action,time:action==='schedule'?parseKst(i.options.getString('시간')):undefined,expectedVersion:b.version,actor:`discord:${i.user.id}`});await i.editReply(`${testMode?'🧪 검증 DB · ':''}✅ ${format(result)}`);if(testMode)console.log('Discord verification action committed:',action);
    }
