@@ -22,7 +22,7 @@ function render(){const filter=$('search').value.trim();const normalizedFilter=S
   const formats=['.webp','.png','.jpg','.jpeg'];let formatIndex=0;
   // Do not show a broken-image placeholder while trying alternate formats.
   // The portrait is added only after a local asset loads successfully.
-  portrait.addEventListener('load',()=>{if(!card.isConnected)return;top.prepend(portrait);top.classList.add('has-portrait');});
+  portrait.addEventListener('load',()=>{top.prepend(portrait);top.classList.add('has-portrait');});
   portrait.addEventListener('error',()=>{formatIndex++;if(formatIndex<formats.length)portrait.src=base+formats[formatIndex];});
   portrait.src=base+formats[formatIndex];
  }
