@@ -7,6 +7,8 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.WebResourceResponse;
+import java.io.IOException;
 import android.webkit.WebSettings;
 import android.webkit.SslErrorHandler;
 import android.net.http.SslError;
@@ -40,6 +42,22 @@ public class MainActivity extends Activity {
         board.getSettings().setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         board.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
         board.setWebViewClient(new WebViewClient() {
+            @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                Uri uri = request.getUrl();
+                if (!sameOrigin(uri) || !"GET".equalsIgnoreCase(request.getMethod())) return null;
+                String path = uri.getPath();
+                String name;
+                String mime;
+                if ("/".equals(path) || "/index.html".equals(path)) { name = "index.html"; mime = "text/html"; }
+                else if ("/style.css".equals(path)) { name = "style.css"; mime = "text/css"; }
+                else if ("/app.js".equals(path)) { name = "app.js"; mime = "application/javascript"; }
+                else if ("/boss-icon.svg".equals(path)) { name = "boss-icon.svg"; mime = "image/svg+xml"; }
+                else if ("/manifest.webmanifest".equals(path)) { name = "manifest.webmanifest"; mime = "application/manifest+json"; }
+                else return null; // API requests remain on the configured HTTPS server.
+                try { return new WebResourceResponse(mime, "UTF-8", getAssets().open(name)); }
+                catch (IOException e) { return null; }
+            }
+
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
                 if (sameOrigin(uri)) return false;
