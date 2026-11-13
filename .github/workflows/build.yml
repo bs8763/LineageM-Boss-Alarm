@@ -114,7 +114,7 @@ jobs:
           APK=app/build/outputs/apk/release/app-release.apk
           test -s "$APK"
           for asset in index.html style.css app.js boss-icon.svg manifest.webmanifest; do
-            unzip -p "$APK" "assets/$asset" | test -s /dev/stdin || { echo "::error::Missing or empty bundled asset: $asset"; exit 1; }
+            test "$(unzip -p "$APK" "assets/$asset" | wc -c)" -gt 0 || { echo "::error::Missing or empty bundled asset: $asset"; exit 1; }
           done
           unzip -p "$APK" assets/index.html | grep -q 'bottom-nav' || { echo "::error::Bottom navigation missing from APK"; exit 1; }
           unzip -p "$APK" assets/index.html | grep -q 'fixedSection' || { echo "::error::Fixed boss section missing from APK"; exit 1; }
