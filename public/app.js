@@ -13,19 +13,6 @@ function input(label,value,type='text'){const l=node('label',label),i=node('inpu
 const SEARCH_ALIASES=Object.freeze({'바포':'바포메트','산두':'산적두목','산적':'산적두목','아르':'아르피어','네크맨':'네크로맨서','암대':'암흑대장로','오르':'오르쿠스','감데':'감시자 데몬','리칸':'리칸트','피닉':'피닉스','카스트':'가스트'});
 function render(){const filter=$('search').value.trim();const normalizedFilter=SEARCH_ALIASES[filter]||filter;const searchTerms=filter?[...new Set([normalizedFilter,...Object.entries(SEARCH_ALIASES).filter(([alias,name])=>alias.includes(filter)||name.includes(filter)).map(([,name])=>name)])]:[];$('list').replaceChildren();$('fixedList').replaceChildren();const now=Date.now();const visible=[...bosses].sort((a,b)=>(a.time?Date.parse(a.time):Infinity)-(b.time?Date.parse(b.time):Infinity)).filter(b=>!searchTerms.length||searchTerms.some(term=>`${b.name} ${b.mapNumber}`.includes(term))).filter(b=>view==='all'||(view==='ready'&&b.time&&Date.parse(b.time)<=now)||(view==='soon'&&b.time&&Date.parse(b.time)>now&&Date.parse(b.time)<=now+3600000)||(view==='unscheduled'&&!b.time));for(const b of visible){
  const card=node('article',undefined,'boss'),top=node('div',undefined,'top');
- // Portraits are optional: only load a bundled, allowlisted local asset; retain the emblem fallback.
- const portraitName=String(b.name||'').normalize('NFC');
- if(/^[가-힣a-zA-Z0-9 _-]{1,60}$/.test(portraitName)){
-  const portrait=node('img',undefined,'boss-portrait');portrait.alt=portraitName+' 초상화';portrait.loading='lazy';portrait.decoding='async';
-  // Support recovered OneStore portrait assets in WebP, PNG or JPEG without broken-image icons.
-  const base='/boss-portraits/'+encodeURIComponent(portraitName);
-  const formats=['.webp','.png','.jpg','.jpeg'];let formatIndex=0;
-  // Do not show a broken-image placeholder while trying alternate formats.
-  // The portrait is added only after a local asset loads successfully.
-  portrait.addEventListener('load',()=>{top.prepend(portrait);top.classList.add('has-portrait');});
-  portrait.addEventListener('error',()=>{formatIndex++;if(formatIndex<formats.length)portrait.src=base+formats[formatIndex];});
-  portrait.src=base+formats[formatIndex];
- }
  top.append(node('h2',b.name),node('span',!b.time?'시간 미등록':Date.parse(b.time)<=Date.now()?'출현 확인 중':'출현 대기','badge'));
  const when=node('div',undefined,'countdown');when.dataset.time=b.time||'';
  card.append(top,node('p',`맵 ${b.mapNumber||'미확정'} · ${b.fixedKstMinutes.length?'고정 '+b.fixedKstMinutes.map(m=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`).join(', '):b.intervalMinutes?b.intervalMinutes+'분 리젠':'리젠 미확정'} · 멍 ${b.misses}회`),when,node('p',date(b.time)));
