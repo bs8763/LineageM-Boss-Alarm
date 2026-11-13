@@ -17,9 +17,12 @@ function render(){const filter=$('search').value.trim();const normalizedFilter=S
  const portraitName=String(b.name||'').normalize('NFC');
  if(/^[가-힣a-zA-Z0-9 _-]{1,60}$/.test(portraitName)){
   const portrait=node('img',undefined,'boss-portrait');portrait.alt=portraitName+' 초상화';portrait.loading='lazy';portrait.decoding='async';
-  portrait.src='/boss-portraits/'+encodeURIComponent(portraitName)+'.webp';
+  // Support recovered OneStore portrait assets in WebP, PNG or JPEG without broken-image icons.
+  const base='/boss-portraits/'+encodeURIComponent(portraitName);
+  const formats=['.webp','.png','.jpg','.jpeg'];let formatIndex=0;
   portrait.addEventListener('load',()=>top.classList.add('has-portrait'));
-  portrait.addEventListener('error',()=>portrait.remove());top.append(portrait);
+  portrait.addEventListener('error',()=>{formatIndex++;if(formatIndex<formats.length)portrait.src=base+formats[formatIndex];else portrait.remove();});
+  portrait.src=base+formats[formatIndex];top.append(portrait);
  }
  top.append(node('h2',b.name),node('span',!b.time?'시간 미등록':Date.parse(b.time)<=Date.now()?'출현 확인 중':'출현 대기','badge'));
  const when=node('div',undefined,'countdown');when.dataset.time=b.time||'';
