@@ -174,5 +174,5 @@ header h1{line-height:1.2;font-weight:800;text-shadow:0 2px 8px #000,0 0 20px #a
 
 /* OneStore hero restoration: reuse the bundled emblem without changing login or boss controls. */
 header{isolation:isolate;overflow:hidden;padding-right:clamp(90px,24vw,168px)}
-header::after{content:"";position:absolute;right:12px;top:50%;width:clamp(72px,19vw,132px);aspect-ratio:1;transform:translateY(-50%);background:url('boss-icon.svg') center/contain no-repeat;opacity:.78;filter:drop-shadow(0 0 12px #a34a2b66);pointer-events:none;z-index:-1}
+header::after{content:"";position:absolute;left:auto;right:12px;top:50%;width:clamp(72px,19vw,132px);aspect-ratio:1;transform:translateY(-50%);background:url('boss-icon.svg') center/contain no-repeat;opacity:.78;filter:drop-shadow(0 0 12px #a34a2b66);pointer-events:none;z-index:-1}
 @media(max-width:390px){header{padding-right:92px}header::after{right:6px;width:78px;opacity:.68}}
