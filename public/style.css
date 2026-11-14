@@ -155,3 +155,7 @@ header h1{line-height:1.2;font-weight:800;text-shadow:0 2px 8px #000,0 0 20px #a
 
 /* Keep the fixed bottom menu anchored below the sticky top toolbar. */
 #board nav.bottom-nav{top:auto!important;bottom:0!important;position:fixed!important}
+
+/* Bundled 31-boss portrait slot: existing emblem stays visible until an image loads. */
+.boss .top .boss-portrait{position:absolute;left:0;top:0;width:48px;height:48px;object-fit:cover;object-position:center;border:1px solid #b4824e;border-radius:6px;background:#1a1115;box-shadow:0 2px 10px #000b}
+@media(max-width:360px){.boss .top .boss-portrait{width:43px;height:43px}}
