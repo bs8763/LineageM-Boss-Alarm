@@ -5,10 +5,11 @@ const env={DISCORD_TEST_MODE:'true',DISCORD_GUILD_ID:'guild',DISCORD_CHANNEL_ID:
 const interaction={commandName:'검증보스',guildId:'guild',channelId:'channel'};
 test('staging commands cannot shadow existing production commands',()=>{
  const production=commandDefinitions().map(c=>c.name),staging=commandDefinitions(true).map(c=>c.name);
- assert.equal(new Set([...production,...staging]).size,8);
+ assert.equal(new Set([...production,...staging]).size,12);
  for(const commandName of production)assert.equal(commandRoute({...interaction,commandName},env),null);
  for(const commandName of staging)assert.equal(commandRoute({...interaction,commandName},{}),null);
  assert.equal(commandRoute(interaction,env),'보스');
+ assert.equal(commandRoute({...interaction,commandName:'검증서버오픈'},env),'서버오픈');
  assert.equal(commandRoute({...interaction,commandName:'검증보스등록'},env),'보스등록');
 });
 test('staging interactions require the exact configured guild and channel',()=>{

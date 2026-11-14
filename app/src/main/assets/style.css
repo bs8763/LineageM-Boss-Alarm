@@ -1,0 +1,178 @@
+:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#101827;color:#e8eef9}*{box-sizing:border-box}body{margin:0}main{max-width:820px;margin:auto;padding:28px 18px}header{padding:20px 0}h1{font-size:32px;margin:8px 0}h2{font-size:19px}.eyebrow{color:#9eaafe;letter-spacing:2px;font-size:12px}p,footer{color:#aebed5;font-size:14px;line-height:1.7}section,.boss{background:#1b293e;border:1px solid #30435e;border-radius:15px;padding:18px;margin:16px 0}input,button,select{font:inherit;border-radius:9px;padding:11px;border:1px solid #40536f}input,select{background:#101c2e;color:#fff;max-width:100%;min-width:0}label{display:block;margin:9px 0;color:#bdcce1;font-size:13px}label input{display:block;width:100%;margin-top:6px}button{background:#6878f5;color:white;cursor:pointer;font-weight:650;margin:4px}button:disabled{opacity:.5;cursor:wait}.secondary{background:#2b3b54}.danger{background:#8e343d}nav,.actions{display:flex;gap:6px;flex-wrap:wrap}nav input{flex:1}.boss h2{margin:0}.boss .top{display:flex;justify-content:space-between;gap:8px}.badge{font-size:12px;color:#ffd18a}.countdown{font-size:23px;font-weight:750;color:#bac4ff;margin:12px 0 2px}.hint{font-size:13px}#status{padding:10px 0;min-height:40px}#summary{font-size:13px;color:#a1b5d3}.record{padding:9px 0;border-bottom:1px solid #30435e;font-size:13px}footer{margin:24px 0}details{margin-top:14px}summary{cursor:pointer;color:#b5c4dc}.settings{display:grid;grid-template-columns:1fr 1fr;gap:8px}[hidden]{display:none!important}@media(max-width:480px){main{padding:16px 12px}.boss{padding:14px}.actions button{flex:1}.settings{grid-template-columns:1fr}}
+
+.filters{display:flex;gap:6px;overflow-x:auto;padding:10px 0;scrollbar-width:thin}.filter-button{white-space:nowrap;background:#24354f;color:#d6e4fa;font-size:13px;padding:9px 12px;margin:0}.filter-button.selected{background:#6878f5;color:#fff}.boss .actions button{min-height:46px}.boss .badge{white-space:nowrap}
+
+/* Mobile-first clan board visual refinement; preserves existing controls. */
+:root{--surface:#17243a;--surface-raised:#1d304b;--border:#344a69;--accent:#c9a76b;--muted:#aebed5}
+body{background:radial-gradient(ellipse at 50% -10%,#263c59 0%,#101827 55%);min-height:100vh}
+main{max-width:940px;padding:20px 16px 48px}
+header{position:relative;padding:22px 20px;margin:0 0 16px;background:linear-gradient(135deg,#243b58,#142237 65%);border:1px solid #455674;border-radius:18px;box-shadow:0 8px 28px #0004}
+header:before{content:"";position:absolute;left:20px;top:0;width:86px;height:3px;background:var(--accent)}
+header h1{font-size:clamp(25px,5vw,35px);letter-spacing:-.04em}
+header p:last-child{margin-bottom:0}
+.eyebrow{color:#e4c590;font-weight:700}
+#login{max-width:510px;margin:20px auto;padding:26px;background:linear-gradient(150deg,#213550,#152339)}
+#login h2{margin-top:0;color:#f1dfb9}
+#connect{width:100%;margin:12px 0 0;min-height:48px}
+button{transition:background-color .15s,border-color .15s;touch-action:manipulation}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid #e9ca8b;outline-offset:2px}
+#board nav{position:sticky;top:0;z-index:2;padding:10px 0;background:#101827f2;backdrop-filter:blur(8px)}
+#board nav input{min-width:130px}
+#summary{background:#172941;border:1px solid var(--border);padding:12px 14px;border-radius:10px}
+.boss-group{background:transparent;border:0;padding:0;margin:22px 0}
+.boss-group>h2{font-size:18px;margin:0 0 12px;padding:0 0 10px;border-bottom:1px solid #4c617c;color:#efd8ad}
+.boss-group>.hint{margin-top:0}
+.boss{position:relative;background:linear-gradient(155deg,#20324c,#18273c);border-color:#3b4f6d;box-shadow:0 5px 15px #0002;margin:10px 0;padding:16px}
+.boss .top{align-items:center}
+.boss .top h2{font-size:19px;color:#f4f6fa}
+.boss .badge{border:1px solid #7d6747;border-radius:99px;padding:5px 9px;background:#473b2b;color:#f4d49b}
+.countdown{color:#f1d6a0;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.boss .actions{margin-top:10px}
+.boss .actions button:first-child{background:#766039}
+.boss .actions button{min-width:84px}
+.boss details{border-top:1px solid #354963;padding-top:11px}
+.boss summary{min-height:32px}
+.filter-button.selected{background:#79623d;color:#fff;border-color:#d3ae71}
+#history{max-height:360px;overflow-y:auto}
+@media(max-width:480px){
+ main{padding:12px 10px 36px}
+ header{padding:20px 16px}
+ #board nav{gap:5px}
+ #board nav input{flex-basis:100%;width:100%}
+ #board nav button{flex:1}
+ .boss-group{margin:18px 0}
+ .boss{padding:14px 12px}
+ .boss .top h2{font-size:18px}
+ .countdown{font-size:21px}
+ .boss .actions button{flex:1;min-height:48px}
+}
+
+/* OneStore reference restoration: dark crimson/gold compact dashboard */
+:root{color-scheme:dark;--red:#9c2928;--gold:#e6bd78;--ink:#09090c;--panel:#151319;--line:#403035}
+html{background:var(--ink)}
+body{background:radial-gradient(ellipse at top,#311515 0,#100d11 36%,#08090b 85%);color:#ece3dc}
+main{max-width:860px;padding:10px 10px 80px}
+header{margin:0 0 12px;padding:28px 17px 20px;min-height:154px;border-radius:4px;border:1px solid #5b302d;background:linear-gradient(100deg,#100c10d9,#1b1010c7),radial-gradient(circle at 85% 30%,#7e2b21 0,#221016 52%,#09080b 90%);box-shadow:inset 0 -3px #4a211d,0 4px 15px #0009}
+header:before{left:17px;width:130px;background:linear-gradient(90deg,#a12d24,#e0b06a)}
+header h1{font-family:Georgia,'Noto Serif KR',serif;font-size:clamp(25px,6vw,35px);color:#f4e4c4;text-shadow:0 2px 8px #000;letter-spacing:-.045em}
+header h1 span{color:#dba46a}
+header p:last-child{color:#d1b4a1;font-size:12px}
+.eyebrow{color:#c68e65;letter-spacing:1.6px}
+section,.boss{border-radius:7px;background:linear-gradient(160deg,#1b171b,#100f13);border:1px solid #46353a}
+#login{background:#171217;border-color:#64443d}
+#login h2{color:#e9c58d}
+#board nav{background:#0d0b0eea;border-bottom:1px solid #3b292a;padding:8px 0;position:sticky}
+.clan-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;background:linear-gradient(90deg,#62221e,#241619);border:1px solid #7a3831;padding:10px 12px;color:#f2d6b3;font-weight:700;font-size:14px}
+.clan-toolbar span:last-child{font-size:11px;color:#d0b6aa;font-weight:400}
+input,select{background:#0e1016;border-color:#534047;color:#f3e9df}
+button{background:linear-gradient(#87322e,#581c1d);border:1px solid #a44b3b;color:#f8eae1;border-radius:5px;box-shadow:inset 0 1px #ffffff18}
+button.secondary{background:linear-gradient(#2e3650,#182239);border-color:#485577}
+button.danger{background:#752222}
+#summary{background:#171319;border:1px solid #453237;border-radius:5px;color:#d9c5b7}
+.filters{gap:4px}
+.filter-button{background:#1c171b;color:#d5c2b7;border-color:#49363a;border-radius:4px}
+.filter-button.selected{background:linear-gradient(#8a322c,#541e1e);border-color:#b15a46;color:#fff}
+.boss-group>h2{color:#e7be83;border-color:#68402f;font-size:17px}
+.boss{padding:12px 13px;margin:7px 0;border-color:#3e3035;box-shadow:0 2px 8px #0007}
+.boss .top h2{font-size:17px;color:#f2e3d2}
+.boss .badge{background:#321e1c;border-color:#714536;color:#e4b484;font-size:11px}
+.boss p{margin:7px 0;color:#a99b9a;font-size:12px}
+.countdown{color:#e9c27f;font-size:19px;margin:6px 0;font-variant-numeric:tabular-nums}
+.boss .actions{display:flex;gap:4px}
+.boss .actions button{margin:2px 0;min-height:38px;flex:1;font-size:13px}
+.boss .actions button:first-child{background:linear-gradient(#9e3432,#681d21);border-color:#b44b45}
+.boss .actions button:nth-child(2){background:linear-gradient(#365b9c,#203c72);border-color:#4b73b2}
+.boss details{border-color:#352a2d}
+.boss details>summary{color:#cdb8aa;font-size:12px}
+.boss details>button{background:linear-gradient(#27714b,#185235);border-color:#41976a}
+#status{color:#c7a797}
+@media(max-width:480px){main{padding:8px 8px 72px}header{padding:25px 14px 16px}#board nav input{flex-basis:100%}.boss{padding:11px}.boss .actions button{min-height:42px}}
+
+/* Bottom navigation for the original clan dashboard layout */
+.bottom-nav{position:fixed!important;bottom:0;left:50%;transform:translateX(-50%);width:min(100%,860px);z-index:30;display:flex!important;justify-content:space-around;gap:0!important;padding:6px max(8px,env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom))!important;background:#120e12f5!important;border-top:1px solid #9c5a39!important;box-shadow:0 -6px 20px #000a;backdrop-filter:blur(12px)}
+.bottom-nav button{display:flex;flex:1;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:48px;margin:0 2px;padding:4px 2px;border:0;background:transparent;box-shadow:none;color:#d4ae7b;font-size:20px}.bottom-nav button span{font-size:10px;white-space:nowrap;color:#e6d1b6}.bottom-nav button.active{background:#48201d;border-bottom:2px solid #d8aa6e}.bottom-nav button[hidden]{display:none!important}#board .boss-group,#historySection,#admin{scroll-margin-top:95px}main{padding-bottom:calc(95px + env(safe-area-inset-bottom))}
+
+/* Shared app emblem: use the bundled icon on the login and dashboard screens. */
+header{padding-left:96px;min-height:112px}
+header::after{content:"";position:absolute;top:30px;left:17px;width:64px;height:64px;background:url('boss-icon.svg') center/contain no-repeat;border:1px solid #8b5738;border-radius:13px;box-shadow:0 2px 10px #000b}
+@media(max-width:480px){header{padding-left:82px}header::after{top:27px;left:12px;width:56px;height:56px}}
+
+/* OneStore palette consistency: remove remaining blue temporary controls. */
+:root{--surface:#171217;--surface-raised:#21171a;--border:#624039;--muted:#c4a99a}
+button.secondary{background:linear-gradient(#47312b,#251a1b);border-color:#765044;color:#e8d2b6}
+#board nav{background:#100c0ff2}
+#board nav button.secondary{background:linear-gradient(#47312b,#251a1b);border-color:#765044}
+.boss .actions button:nth-child(2){background:linear-gradient(#654329,#39251e);border-color:#91633e;color:#f4d4a6}
+.boss details>button{background:linear-gradient(#69482b,#3c281d);border-color:#9b754a;color:#f4d9ae}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline-color:#e9c27f}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+
+/* Compact boss cards: readable portrait placeholder until licensed original assets are recovered. */
+.boss .top{position:relative;min-height:54px;align-items:center;padding-left:60px}
+.boss .top::before{content:'⚔';position:absolute;left:0;top:0;width:48px;height:48px;display:grid;place-items:center;font-size:25px;color:#e9bd76;background:radial-gradient(circle at 50% 35%,#663127,#1a1115 72%);border:1px solid #9b6746;border-radius:6px;box-shadow:inset 0 0 0 2px #22171b,0 2px 8px #0008}
+.boss .top h2{line-height:1.35;overflow-wrap:anywhere}
+.boss .top .badge{max-width:110px;white-space:normal;text-align:center;flex-shrink:0}
+.boss:focus-within{border-color:#a66e45}
+@media(max-width:360px){.boss .top{padding-left:52px}.boss .top::before{width:43px;height:43px}.boss .top h2{font-size:15px}.boss .top .badge{font-size:10px;padding:4px}}
+
+/* 11AM design sprint: visual hierarchy and thumb-friendly boss board */
+header{overflow:hidden;isolation:isolate;background:radial-gradient(ellipse at 88% 5%,#6b3027aa,transparent 46%),linear-gradient(125deg,#1c1013,#0b090c 72%);border:1px solid #795039;box-shadow:inset 0 1px #d2a26555,inset 0 -3px #562522,0 7px 22px #0009}
+header::before{width:calc(100% - 34px);height:2px;background:linear-gradient(90deg,transparent,#e9bc70,#9c3429,transparent)}
+header h1{line-height:1.2;font-weight:800;text-shadow:0 2px 8px #000,0 0 20px #a63a2722}
+.clan-toolbar{border-color:#a86a3e;background:linear-gradient(100deg,#6c2420,#2b1719 75%);box-shadow:inset 0 1px #df9e6455}
+#summary{display:block;border-left:3px solid #d8a75f;font-variant-numeric:tabular-nums}
+.boss-group>h2{letter-spacing:.025em;text-shadow:0 2px 6px #000}
+.boss{background:linear-gradient(120deg,#24191b,#151115 55%,#100e12);border:1px solid #5b3c34;border-left:3px solid #98613c;box-shadow:inset 0 1px #ffffff0a,0 4px 13px #0008}
+.boss .top::before{background:radial-gradient(circle at 50% 32%,#794335,#211518 65%,#0f0d10);border-color:#b4824e;box-shadow:inset 0 0 0 2px #1b1216,0 0 0 1px #271717,0 2px 10px #000b}
+.boss .top h2{font-family:Georgia,'Noto Serif KR',serif;font-weight:750;color:#f5e5c9}
+.boss .badge{background:#38201c;border-color:#9b603f;color:#f3d4a0}
+.countdown{font-weight:800;font-size:21px;color:#f3c77d;text-shadow:0 1px 5px #000}
+.boss .actions button{font-weight:800;letter-spacing:.06em}
+.boss .actions button:active{filter:brightness(1.2)}
+.bottom-nav{background:linear-gradient(#261618,#100c10)!important;border-top:2px solid #ac7645!important}
+.bottom-nav button.active{background:linear-gradient(#603027,#361b1d);color:#ffdf9c;border-bottom:2px solid #f0c37b}
+#historySection,#admin{background:#171115;border:1px solid #654139}
+@media(max-width:480px){header h1{font-size:25px}.clan-toolbar{font-size:13px}.boss .top{gap:5px}.boss .actions button{min-height:46px}.bottom-nav button{min-height:51px}}
+
+/* Responsive OneStore-style boss gallery: compact two-column board on wide screens. */
+@media(min-width:680px){
+ #list,#fixedList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:stretch}
+ #list>.boss,#fixedList>.boss{margin:0;min-width:0}
+ .boss .top{min-height:62px}
+ .boss .actions{margin-top:auto}
+}
+@media(max-width:679px){
+ #list,#fixedList{display:block}
+}
+/* Keep original gold/crimson navigation legible on phones with gesture bars. */
+.bottom-nav button:focus-visible{outline:2px solid #f0c37b;outline-offset:-3px}
+.bottom-nav button span{font-weight:700;letter-spacing:.01em}
+@media(hover:hover){.boss:hover{border-color:#b4824e;box-shadow:inset 0 1px #ffffff10,0 5px 16px #000b}}
+
+/* Boss cards intentionally use the existing gold emblem; no portrait images are loaded. */
+.boss .top{padding-left:60px}
+@media(max-width:360px){.boss .top{padding-left:56px}}
+
+/* Keep the fixed bottom menu anchored below the sticky top toolbar. */
+#board nav.bottom-nav{top:auto!important;bottom:0!important;position:fixed!important}
+
+/* Bundled 31-boss portrait slot: existing emblem stays visible until an image loads. */
+.boss .top .boss-portrait{position:absolute;left:0;top:0;width:48px;height:48px;object-fit:cover;object-position:center;border:1px solid #b4824e;border-radius:6px;background:#1a1115;box-shadow:0 2px 10px #000b}
+@media(max-width:360px){.boss .top .boss-portrait{width:43px;height:43px}}
+
+/* OneStore restoration: fixed bosses receive a distinct gold-accent panel. */
+#fixedSection{border-color:#8f673c;background:linear-gradient(145deg,#23191a,#100e11 75%)}
+#fixedSection>h2{color:#f1cf8b}
+#fixedList .boss{border-left-color:#d0a15a;background:linear-gradient(120deg,#292018,#171216 70%)}
+#fixedList .boss .top::before{content:'♛';color:#f6d58b;background:radial-gradient(circle,#77502c,#1a1215 75%)}
+#fixedList .boss .badge{border-color:#b58b53;background:#38291c}
+/* Keep portrait, boss name, and spawn status readable on narrow Galaxy screens. */
+.boss .top{min-width:0}
+.boss .top h2{min-width:0;flex:1}
+.boss .top .boss-portrait{z-index:1}
+@media(max-width:390px){.boss .top .badge{max-width:88px;font-size:10px}.boss .top h2{font-size:15px}}
+
+/* OneStore hero restoration: reuse the bundled emblem without changing login or boss controls. */
+header{isolation:isolate;overflow:hidden;padding-right:clamp(90px,24vw,168px)}
+header::after{content:"";position:absolute;left:auto;right:12px;top:50%;width:clamp(72px,19vw,132px);aspect-ratio:1;transform:translateY(-50%);background:url('boss-icon.svg') center/contain no-repeat;opacity:.78;filter:drop-shadow(0 0 12px #a34a2b66);pointer-events:none;z-index:-1}
+@media(max-width:390px){header{padding-right:92px}header::after{right:6px;width:78px;opacity:.68}}

@@ -2,7 +2,7 @@ name: Verify and Build Android APK
 on:
   workflow_dispatch:
   push:
-    branches: [main, 'feat/**']
+    branches: [main, 'feat/**', 'integration/server-open-auto-miss-aliases']
   pull_request:
 permissions:
   contents: read
@@ -51,6 +51,18 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+      - name: Sync latest clan board into Android APK assets
+        run: |
+          set -eu
+          cp public/app.js app/src/main/assets/app.js
+          cp public/style.css app/src/main/assets/style.css
+          cp public/boss-icon.svg app/src/main/assets/boss-icon.svg
+          if [ -d public/boss-portraits ]; then
+            mkdir -p app/src/main/assets/boss-portraits
+            cp -R public/boss-portraits/. app/src/main/assets/boss-portraits/
+          fi
+          cmp public/app.js app/src/main/assets/app.js
+          cmp public/style.css app/src/main/assets/style.css
       - name: Build and lint
         run: gradle --no-daemon :app:lintDebug :app:assembleDebug
         env:
@@ -67,7 +79,7 @@ jobs:
           retention-days: 14
 
   release:
-    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && github.ref == 'refs/heads/main'
+    if: ((github.event_name == 'workflow_dispatch' || github.event_name == 'push') && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/integration/server-open-auto-miss-aliases')) || (github.event_name == 'pull_request' && github.head_ref == 'integration/server-open-auto-miss-aliases')
     needs: test
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -101,6 +113,18 @@ jobs:
           umask 077
           printf '%s' "$KEYSTORE" | base64 --decode > "$RUNNER_TEMP/release.keystore"
           test -s "$RUNNER_TEMP/release.keystore"
+      - name: Sync latest clan board into Android APK assets
+        run: |
+          set -eu
+          cp public/app.js app/src/main/assets/app.js
+          cp public/style.css app/src/main/assets/style.css
+          cp public/boss-icon.svg app/src/main/assets/boss-icon.svg
+          if [ -d public/boss-portraits ]; then
+            mkdir -p app/src/main/assets/boss-portraits
+            cp -R public/boss-portraits/. app/src/main/assets/boss-portraits/
+          fi
+          cmp public/app.js app/src/main/assets/app.js
+          cmp public/style.css app/src/main/assets/style.css
       - name: Build signed release APK
         env:
           ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/release.keystore
@@ -109,6 +133,15 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           BOSS_APP_URL: ${{ vars.BOSS_APP_URL || 'https://ami37pk16s.apps.bot-hosting.cloud' }}
         run: gradle --no-daemon :app:lintRelease :app:assembleRelease
+      - name: Verify bundled offline clan interface
+        run: |
+          APK=app/build/outputs/apk/release/app-release.apk
+          test -s "$APK"
+          for asset in index.html style.css app.js boss-icon.svg manifest.webmanifest; do
+            test "$(unzip -p "$APK" "assets/$asset" | wc -c)" -gt 0 || { echo "::error::Missing or empty bundled asset: $asset"; exit 1; }
+          done
+          unzip -p "$APK" assets/index.html | grep -q 'bottom-nav' || { echo "::error::Bottom navigation missing from APK"; exit 1; }
+          unzip -p "$APK" assets/index.html | grep -q 'fixedSection' || { echo "::error::Fixed boss section missing from APK"; exit 1; }
       - name: Verify APK signature and checksum
         run: |
           APK=app/build/outputs/apk/release/app-release.apk
