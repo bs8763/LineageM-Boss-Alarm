@@ -176,3 +176,13 @@ header h1{line-height:1.2;font-weight:800;text-shadow:0 2px 8px #000,0 0 20px #a
 header{isolation:isolate;overflow:hidden;padding-right:clamp(90px,24vw,168px)}
 header::after{content:"";position:absolute;left:auto;right:12px;top:50%;width:clamp(72px,19vw,132px);aspect-ratio:1;transform:translateY(-50%);background:url('/boss-icon.svg') center/contain no-repeat;opacity:.78;filter:drop-shadow(0 0 12px #a34a2b66);pointer-events:none;z-index:-1}
 @media(max-width:390px){header{padding-right:92px}header::after{right:6px;width:78px;opacity:.68}}
+
+/* Galaxy WebView: reserve status-bar space for the sticky search controls. */
+:root{--app-top-inset:max(env(safe-area-inset-top, 0px), 28px)}
+#board>nav:not(.bottom-nav){top:var(--app-top-inset)!important;scroll-margin-top:calc(var(--app-top-inset) + 72px);z-index:20}
+#board .boss-group,#historySection,#admin{scroll-margin-top:calc(var(--app-top-inset) + 90px)}
+/* The emblem belongs at the right; do not squeeze the Korean title between two reserved icon slots. */
+header{padding-left:17px!important;padding-right:clamp(92px,25vw,165px)!important}
+header h1{overflow-wrap:normal;word-break:keep-all;font-size:clamp(21px,5.2vw,32px);line-height:1.3}
+header::after{left:auto!important;right:12px}
+@media(max-width:390px){header{padding-left:14px!important;padding-right:90px!important}header h1{font-size:clamp(20px,5.5vw,25px)}}
