@@ -51,6 +51,18 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+      - name: Sync latest clan board into Android APK assets
+        run: |
+          set -eu
+          cp public/app.js app/src/main/assets/app.js
+          cp public/style.css app/src/main/assets/style.css
+          cp public/boss-icon.svg app/src/main/assets/boss-icon.svg
+          if [ -d public/boss-portraits ]; then
+            mkdir -p app/src/main/assets/boss-portraits
+            cp -R public/boss-portraits/. app/src/main/assets/boss-portraits/
+          fi
+          cmp public/app.js app/src/main/assets/app.js
+          cmp public/style.css app/src/main/assets/style.css
       - name: Build and lint
         run: gradle --no-daemon :app:lintDebug :app:assembleDebug
         env:
@@ -101,6 +113,18 @@ jobs:
           umask 077
           printf '%s' "$KEYSTORE" | base64 --decode > "$RUNNER_TEMP/release.keystore"
           test -s "$RUNNER_TEMP/release.keystore"
+      - name: Sync latest clan board into Android APK assets
+        run: |
+          set -eu
+          cp public/app.js app/src/main/assets/app.js
+          cp public/style.css app/src/main/assets/style.css
+          cp public/boss-icon.svg app/src/main/assets/boss-icon.svg
+          if [ -d public/boss-portraits ]; then
+            mkdir -p app/src/main/assets/boss-portraits
+            cp -R public/boss-portraits/. app/src/main/assets/boss-portraits/
+          fi
+          cmp public/app.js app/src/main/assets/app.js
+          cmp public/style.css app/src/main/assets/style.css
       - name: Build signed release APK
         env:
           ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/release.keystore
