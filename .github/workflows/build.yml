@@ -54,6 +54,8 @@ jobs:
       - name: Sync latest clan board into Android APK assets
         run: |
           set -eu
+          cp public/index.html app/src/main/assets/index.html
+          cp public/manifest.webmanifest app/src/main/assets/manifest.webmanifest
           cp public/app.js app/src/main/assets/app.js
           cp public/style.css app/src/main/assets/style.css
           cp public/boss-icon.svg app/src/main/assets/boss-icon.svg
@@ -61,6 +63,8 @@ jobs:
             mkdir -p app/src/main/assets/boss-portraits
             cp -R public/boss-portraits/. app/src/main/assets/boss-portraits/
           fi
+          cmp public/index.html app/src/main/assets/index.html
+          cmp public/manifest.webmanifest app/src/main/assets/manifest.webmanifest
           cmp public/app.js app/src/main/assets/app.js
           cmp public/style.css app/src/main/assets/style.css
       - name: Build and lint
@@ -116,6 +120,8 @@ jobs:
       - name: Sync latest clan board into Android APK assets
         run: |
           set -eu
+          cp public/index.html app/src/main/assets/index.html
+          cp public/manifest.webmanifest app/src/main/assets/manifest.webmanifest
           cp public/app.js app/src/main/assets/app.js
           cp public/style.css app/src/main/assets/style.css
           cp public/boss-icon.svg app/src/main/assets/boss-icon.svg
@@ -123,6 +129,8 @@ jobs:
             mkdir -p app/src/main/assets/boss-portraits
             cp -R public/boss-portraits/. app/src/main/assets/boss-portraits/
           fi
+          cmp public/index.html app/src/main/assets/index.html
+          cmp public/manifest.webmanifest app/src/main/assets/manifest.webmanifest
           cmp public/app.js app/src/main/assets/app.js
           cmp public/style.css app/src/main/assets/style.css
       - name: Build signed release APK
