@@ -202,3 +202,9 @@ header::after{left:auto!important;right:12px}
 
 /* Show a legible placeholder until each licensed boss portrait is bundled. */
 .boss .top .boss-portrait-fallback{display:grid;place-items:center;color:#f1cf8b;font-size:13px;font-weight:800;letter-spacing:-.04em;background:radial-gradient(circle at 50% 30%,#623125,#1a1115 75%);user-select:none}
+
+/* Portraits occupy the emblem slot; avoid drawing a second emblem beneath them. */
+.boss .top:has(> .boss-portrait)::before{content:none}
+.boss .top .boss-portrait{display:block;flex:none;overflow:hidden;line-height:1;text-align:center}
+.boss .top .boss-portrait-fallback{line-height:1.2;padding:3px;overflow-wrap:anywhere;text-align:center}
+@media(max-width:360px){.boss .top .boss-portrait-fallback{font-size:11px}}
