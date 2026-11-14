@@ -199,3 +199,6 @@ header::after{left:auto!important;right:12px}
   .boss .actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
   .boss .actions button{min-width:0;width:100%;margin:0}
 }
+
+/* Show a legible placeholder until each licensed boss portrait is bundled. */
+.boss .top .boss-portrait-fallback{display:grid;place-items:center;color:#f1cf8b;font-size:13px;font-weight:800;letter-spacing:-.04em;background:radial-gradient(circle at 50% 30%,#623125,#1a1115 75%);user-select:none}
