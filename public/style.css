@@ -224,3 +224,17 @@ header::after{left:auto!important;right:12px}
  .boss .top .boss-portrait-fallback{font-size:14px}
  .boss .top h2{font-size:15px}
 }
+
+/* OneStore portrait-first cards: keep artwork and status visually separate on Galaxy. */
+.boss .top{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:8px;padding-left:78px}
+.boss .top h2{grid-column:1;min-width:0;line-height:1.35;word-break:keep-all}
+.boss .top .badge{grid-column:2;max-width:104px;align-self:center;margin:0}
+.boss .top .boss-portrait,.boss .top::before{top:50%;transform:translateY(-50%)}
+.boss .top .boss-portrait-fallback{font-family:Georgia,'Noto Serif KR',serif}
+#fixedList .boss{border-left-width:4px}
+#fixedSection>h2::after{content:' · 정시 출현';font-size:12px;font-weight:500;color:#d6b37e}
+.boss .actions button:focus-visible,.bottom-nav button:focus-visible{outline:2px solid #f1ca84;outline-offset:2px}
+@media(max-width:390px){
+ .boss .top{padding-left:65px;column-gap:5px}
+ .boss .top .badge{max-width:82px}
+}
