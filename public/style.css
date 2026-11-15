@@ -257,27 +257,19 @@ header::after{left:auto!important;right:12px}
 @media(min-width:680px){.boss .top{min-height:70px}}
 
 
-/* OneStore visual integration: bundled emblem, crimson panels and gold controls.
-   Uses the existing icon asset; no substitute boss portraits are claimed. */
-header{padding-left:clamp(88px,25vw,122px);isolation:isolate;overflow:hidden}
-header::after{content:"";position:absolute;left:15px;top:50%;transform:translateY(-50%);width:clamp(62px,18vw,92px);height:clamp(62px,18vw,92px);background:url("boss-icon.svg") center/contain no-repeat;filter:drop-shadow(0 3px 9px #000b);pointer-events:none}
-header h1,header p{position:relative;z-index:1}
-header .eyebrow{font-size:10px;overflow-wrap:anywhere}
-#board .secondary,button.secondary{background:linear-gradient(#3a2829,#201719);border-color:#785247;color:#e8caa3}
+/* Consolidated OneStore header and boss portrait layout.
+   Keep the emblem on the right so the title does not overlap on Galaxy screens. */
+header{padding-left:17px!important;padding-right:clamp(92px,25vw,165px)!important}
+header::after{left:auto!important;right:12px;top:50%;width:clamp(72px,19vw,132px);height:auto;aspect-ratio:1;transform:translateY(-50%);background:url("boss-icon.svg") center/contain no-repeat}
 .boss-group>h2{background:linear-gradient(90deg,#481e1e 0%,#1b1215 75%);padding:11px 12px;border-left:3px solid #d7a55d;border-bottom:1px solid #68402f}
-#fixedList .boss{border-left:3px solid #c99c57;background:linear-gradient(145deg,#241b1b,#100e11)}
-#regularList .boss{border-left:3px solid #8e302a}
-#historySection,#admin{border-top:2px solid #8d4535}
-.bottom-nav button:focus-visible{outline:2px solid #e6bd78;outline-offset:-3px}
-@media(max-width:390px){header{padding-left:86px;padding-right:9px}header::after{left:10px;width:64px;height:64px}header h1{font-size:23px}.clan-toolbar{font-size:12px}}
-
-/* Portrait-first OneStore layout: align the actual image and fallback at 66px. */
+#regularSection .boss{border-left:3px solid #8e302a}
+#fixedList .boss{border-left:4px solid #c99c57}
 .boss .top{min-height:72px;padding-left:78px;gap:10px}
 .boss .top::before,.boss .top .boss-portrait{width:66px;height:66px}
-.boss .top h2{min-width:0;overflow-wrap:anywhere}
-#fixedList .boss .top .boss-portrait{border-color:#d0a15a}
 @media(max-width:390px){
- .boss .top{min-height:64px;padding-left:70px;gap:6px}
+ header{padding-left:14px!important;padding-right:90px!important}
+ header::after{right:6px;width:78px}
+ .boss .top{min-height:64px;padding-left:68px;gap:6px}
  .boss .top::before,.boss .top .boss-portrait{width:58px;height:58px}
- .boss .top .badge{max-width:88px}
+ .boss .top .badge{max-width:78px}
 }
