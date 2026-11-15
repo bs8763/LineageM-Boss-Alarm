@@ -270,3 +270,14 @@ header .eyebrow{font-size:10px;overflow-wrap:anywhere}
 #historySection,#admin{border-top:2px solid #8d4535}
 .bottom-nav button:focus-visible{outline:2px solid #e6bd78;outline-offset:-3px}
 @media(max-width:390px){header{padding-left:86px;padding-right:9px}header::after{left:10px;width:64px;height:64px}header h1{font-size:23px}.clan-toolbar{font-size:12px}}
+
+/* Portrait-first OneStore layout: align the actual image and fallback at 66px. */
+.boss .top{min-height:72px;padding-left:78px;gap:10px}
+.boss .top::before,.boss .top .boss-portrait{width:66px;height:66px}
+.boss .top h2{min-width:0;overflow-wrap:anywhere}
+#fixedList .boss .top .boss-portrait{border-color:#d0a15a}
+@media(max-width:390px){
+ .boss .top{min-height:64px;padding-left:70px;gap:6px}
+ .boss .top::before,.boss .top .boss-portrait{width:58px;height:58px}
+ .boss .top .badge{max-width:88px}
+}
