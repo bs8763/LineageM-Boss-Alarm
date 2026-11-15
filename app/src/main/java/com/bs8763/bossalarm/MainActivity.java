@@ -53,6 +53,11 @@ public class MainActivity extends Activity {
                 else if ("/app.js".equals(path)) { name = "app.js"; mime = "application/javascript"; }
                 else if ("/boss-icon.svg".equals(path)) { name = "boss-icon.svg"; mime = "image/svg+xml"; }
                 else if ("/manifest.webmanifest".equals(path)) { name = "manifest.webmanifest"; mime = "application/manifest+json"; }
+                else if (path != null && path.matches("^/boss-portraits/[A-Za-z0-9_-]+\\.(webp|png|jpg|jpeg)$")) {
+                    name = path.substring(1);
+                    String extension = name.substring(name.lastIndexOf('.') + 1);
+                    mime = "jpg".equals(extension) || "jpeg".equals(extension) ? "image/jpeg" : "image/" + extension;
+                }
                 else return null; // API requests remain on the configured HTTPS server.
                 try { return new WebResourceResponse(mime, "UTF-8", getAssets().open(name)); }
                 catch (IOException e) { return null; }
