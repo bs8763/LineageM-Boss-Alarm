@@ -53,7 +53,7 @@ public class MainActivity extends Activity {
                 else if ("/app.js".equals(path)) { name = "app.js"; mime = "application/javascript"; }
                 else if ("/boss-icon.svg".equals(path)) { name = "boss-icon.svg"; mime = "image/svg+xml"; }
                 else if ("/manifest.webmanifest".equals(path)) { name = "manifest.webmanifest"; mime = "application/manifest+json"; }
-                else if (path != null && path.matches("^/boss-portraits/[A-Za-z0-9_-]+\\.(webp|png|jpg|jpeg)$")) {
+                else if (path != null && path.matches("^/boss-portraits/[^/\\\\]+\\.(webp|png|jpg|jpeg)$")) {
                     name = path.substring(1);
                     String extension = name.substring(name.lastIndexOf('.') + 1);
                     mime = "jpg".equals(extension) || "jpeg".equals(extension) ? "image/jpeg" : "image/" + extension;
