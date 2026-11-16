@@ -348,3 +348,28 @@ header::after{left:auto!important;right:12px;top:50%;width:clamp(72px,19vw,132px
  header::after{right:12px;left:auto;top:50%;width:64px;height:64px;transform:translateY(-50%)}
 }
 @media(max-width:360px){header{grid-template-columns:minmax(0,1fr) 54px;gap:6px}header h1{font-size:20px}header::after{width:52px;height:52px}}
+
+
+/* Final portrait-free card grid: do not reserve an empty 66px portrait column.
+   Keep boss names and state badges visible on narrow Galaxy screens. */
+.boss .top{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:8px;
+  min-height:0;
+  padding-left:0;
+}
+.boss .top h2{grid-column:1;grid-row:1}
+.boss .top .badge{grid-column:2;grid-row:1;max-width:106px}
+@media(max-width:390px){
+  .boss .top{grid-template-columns:minmax(0,1fr) auto;gap:6px;min-height:0}
+  .boss .top .badge{max-width:80px}
+}
+/* Earlier desktop icon reservation used !important; override it for mobile. */
+@media(max-width:480px){
+  header{padding-left:12px!important;padding-right:84px!important;display:block}
+  header h1{max-width:100%;word-break:keep-all}
+}
+@media(max-width:360px){
+  header{padding-right:68px!important}
+}
