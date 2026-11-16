@@ -325,3 +325,9 @@ header::after{left:auto!important;right:12px;top:50%;width:clamp(72px,19vw,132px
   .boss .top::before,.boss .top .boss-portrait{width:58px;height:58px}
   .boss .top .badge{max-width:80px;font-size:10px}
 }
+
+/* OneStore clan password entry: full-width, touch-friendly and clearly labeled. */
+#login label[for="token"]{display:block;margin:12px 0 7px;color:#e9c58d;font-size:14px;font-weight:700}
+#login #token{display:block;width:100%;min-height:50px;font-size:16px;border:1px solid #96613f;background:#100d10;color:#f6e9d9}
+#login #loginHelp{margin:8px 0 12px;color:#c5ac9c;font-size:12px;line-height:1.5}
+#login #connect{margin-top:8px;background:linear-gradient(180deg,#9b3931,#651e20);border-color:#bb7048;color:#fff1d9}
