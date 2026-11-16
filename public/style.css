@@ -273,3 +273,55 @@ header::after{left:auto!important;right:12px;top:50%;width:clamp(72px,19vw,132px
  .boss .top::before,.boss .top .boss-portrait{width:58px;height:58px}
  .boss .top .badge{max-width:78px}
 }
+
+
+/* Unified OneStore portrait layout: consistent 66px framed portraits and readable
+   status labels on Galaxy screens, including when original art is unavailable. */
+.boss .top{
+  display:grid;
+  grid-template-columns:66px minmax(0,1fr) auto;
+  align-items:center;
+  gap:10px;
+  padding-left:0;
+  min-height:66px;
+}
+.boss .top::before,
+.boss .top .boss-portrait{
+  position:relative;
+  inset:auto;
+  grid-column:1;
+  grid-row:1;
+  width:66px;
+  height:66px;
+  border-radius:7px;
+}
+.boss .top::before{content:'⚔';font-size:28px}
+#fixedList .boss .top::before{content:'♛'}
+.boss .top .boss-portrait{z-index:2;object-fit:cover}
+.boss .top h2{
+  grid-column:2;
+  grid-row:1;
+  margin:0;
+  min-width:0;
+  font-size:clamp(15px,2.8vw,19px);
+  line-height:1.35;
+  overflow-wrap:anywhere;
+}
+.boss .top .badge{
+  grid-column:3;
+  grid-row:1;
+  max-width:106px;
+  min-width:0;
+  overflow-wrap:break-word;
+}
+.boss .top .boss-portrait-fallback{
+  font-size:14px;
+  padding:5px;
+  color:#f4d39a;
+  border:1px solid #ad7547;
+}
+@media(max-width:390px){
+  .boss .top{grid-template-columns:58px minmax(0,1fr) auto;gap:7px;min-height:58px}
+  .boss .top::before,.boss .top .boss-portrait{width:58px;height:58px}
+  .boss .top .badge{max-width:80px;font-size:10px}
+}
