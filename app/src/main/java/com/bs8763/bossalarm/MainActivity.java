@@ -50,6 +50,7 @@ public class MainActivity extends Activity {
                 String mime;
                 if ("/".equals(path) || "/index.html".equals(path)) { name = "index.html"; mime = "text/html"; }
                 else if ("/style.css".equals(path)) { name = "style.css"; mime = "text/css"; }
+                else if ("/onestore-final.css".equals(path)) { name = "onestore-final.css"; mime = "text/css"; }
                 else if ("/app.js".equals(path)) { name = "app.js"; mime = "application/javascript"; }
                 else if ("/boss-icon.svg".equals(path)) { name = "boss-icon.svg"; mime = "image/svg+xml"; }
                 else if ("/manifest.webmanifest".equals(path)) { name = "manifest.webmanifest"; mime = "application/manifest+json"; }
