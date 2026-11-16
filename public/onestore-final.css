@@ -1,0 +1,19 @@
+/* OneStore final mobile layout: black, crimson and gold. Portraits are intentionally excluded. */
+:root{--on-ink:#0b090c;--on-crimson:#8e2927;--on-gold:#e6bd78}
+html,body{background-color:var(--on-ink);color:#f2e5d3}
+header{display:flex;flex-direction:column;justify-content:center;min-height:132px;padding:18px clamp(100px,25vw,160px) 18px 16px!important}
+header::after{left:auto!important;right:12px!important;top:50%;transform:translateY(-50%);width:clamp(70px,18vw,112px);height:clamp(70px,18vw,112px);max-width:30%;background:url('boss-icon.svg') center/contain no-repeat}
+header h1{margin:7px 0;line-height:1.22;word-break:keep-all;overflow-wrap:anywhere}
+#login{border:1px solid #80513d;box-shadow:0 8px 24px #0008}
+#connect{background:linear-gradient(180deg,#9b3931,#5c1b1c);border-color:#d3a15c;color:#ffe5b6}
+#board>nav:not(.bottom-nav){top:0!important;z-index:20}
+.boss .top{padding-left:0!important;min-height:48px}
+.boss .top::before{display:none!important}
+.boss .top .boss-portrait,.boss .top .boss-portrait-fallback{display:none!important}
+.boss .top h2{flex:1;min-width:0;overflow-wrap:anywhere}
+#fixedList .boss{border-left:3px solid #d4a15d}
+.bottom-nav{top:auto!important;bottom:0!important;position:fixed!important}
+.bottom-nav button{min-width:0}
+.bottom-nav button span{overflow:hidden;text-overflow:ellipsis;max-width:100%}
+#board .boss-group,#historySection,#admin{scroll-margin-top:92px}
+@media(max-width:480px){header{padding-right:100px!important}header::after{right:10px!important;width:76px;height:76px}header h1{font-size:clamp(20px,5.8vw,27px)}.boss .top{gap:7px}.boss .top .badge{max-width:40%}main{padding-bottom:calc(100px + env(safe-area-inset-bottom))}}
