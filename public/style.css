@@ -331,3 +331,11 @@ header::after{left:auto!important;right:12px;top:50%;width:clamp(72px,19vw,132px
 #login #token{display:block;width:100%;min-height:50px;font-size:16px;border:1px solid #96613f;background:#100d10;color:#f6e9d9}
 #login #loginHelp{margin:8px 0 12px;color:#c5ac9c;font-size:12px;line-height:1.5}
 #login #connect{margin-top:8px;background:linear-gradient(180deg,#9b3931,#651e20);border-color:#bb7048;color:#fff1d9}
+
+/* Portrait-free OneStore layout: boss names receive the full card width. */
+.boss .top{padding-left:0;min-height:0}
+.boss .top::before{content:none;display:none}
+@media(max-width:360px){.boss .top{padding-left:0}}
+/* Prevent the fixed bottom menu from covering the last card on phones. */
+#board{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+.bottom-nav button:focus-visible{outline:2px solid #f0c37b;outline-offset:-3px}
