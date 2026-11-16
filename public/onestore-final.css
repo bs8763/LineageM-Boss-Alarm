@@ -9,7 +9,7 @@ header h1{margin:7px 0;line-height:1.22;word-break:keep-all;overflow-wrap:anywhe
 #board>nav:not(.bottom-nav){top:0!important;z-index:20}
 .boss .top{padding-left:0!important;min-height:48px}
 .boss .top::before{display:none!important}
-.boss .top .boss-portrait{display:block!important;width:54px;height:54px;flex:0 0 54px;object-fit:cover;border:1px solid var(--on-gold);border-radius:9px;background:#160e12}
+.boss .top .boss-portrait{position:static!important;inset:auto!important;display:block!important;width:54px;height:54px;flex:0 0 54px;object-fit:cover;border:1px solid var(--on-gold);border-radius:9px;background:#160e12}
 .boss .top h2{flex:1;min-width:0;overflow-wrap:anywhere}
 #fixedList .boss{border-left:3px solid #d4a15d}
 .bottom-nav{top:auto!important;bottom:0!important;position:fixed!important}
