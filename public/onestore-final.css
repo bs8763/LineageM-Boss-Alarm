@@ -61,3 +61,27 @@ header h1 span{color:#f1c77e}
 .bottom-nav button.active{box-shadow:inset 0 3px #e6bd78}
 @media(max-width:480px){#board .boss-group,#historySection,#admin{padding:10px}.boss{padding:10px}.boss .top .boss-portrait{width:52px;height:52px;flex-basis:52px}.bottom-nav{z-index:50}}
 @media(prefers-reduced-motion:reduce){.bottom-nav *,button{scroll-behavior:auto!important;transition:none!important}}
+
+
+/* OneStore mobile finishing pass: readable controls, persistent bottom navigation,
+   safe-area spacing and a distinct fixed-boss panel. No unofficial artwork is implied. */
+#board{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+#board>nav:not(.bottom-nav){display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:#170e14;border:1px solid #76503c;border-radius:10px;padding:9px}
+#board>nav:not(.bottom-nav) #search{flex:1 1 180px;min-width:0;background:#0f0b0e;color:#f7e6cf;border:1px solid #9b7152;border-radius:8px;min-height:44px}
+#board>nav:not(.bottom-nav) button{min-height:44px}
+#login label,#admin label,.boss details label{color:#f0d3a6}
+#login button,#admin button,.boss button{min-height:42px}
+#login .hint{color:#d9c1aa}
+.boss .top{display:flex;flex-wrap:nowrap;gap:10px}
+.boss .top .badge{flex-shrink:0;max-width:42%;text-align:center}
+.boss .actions{display:flex;gap:8px;flex-wrap:wrap}
+.boss .actions button{flex:1 1 110px}
+.boss details{margin-top:10px;border-top:1px solid #65403a;padding-top:8px}
+.boss details summary{cursor:pointer;color:#f4d39a;min-height:32px}
+#fixedSection{border-color:#b18a54!important;background:linear-gradient(160deg,#31221a,#140f13)!important}
+#fixedSection h2{color:#ffe0a1}
+#historySection{min-height:90px}
+.bottom-nav{max-width:none!important;min-height:calc(62px + env(safe-area-inset-bottom));display:flex!important;align-items:stretch;justify-content:space-around}
+.bottom-nav button{border:0!important;border-radius:0!important;min-width:0;min-height:62px;line-height:1.25}
+.bottom-nav button[hidden],#adminNav[hidden]{display:none!important}
+@media(max-width:480px){#board>nav:not(.bottom-nav){position:static!important}#board>nav:not(.bottom-nav) #search{flex-basis:100%}.boss .top .badge{font-size:11px}.bottom-nav button{padding:7px 3px}}
