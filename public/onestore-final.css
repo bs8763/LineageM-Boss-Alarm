@@ -85,3 +85,13 @@ header h1 span{color:#f1c77e}
 .bottom-nav button{border:0!important;border-radius:0!important;min-width:0;min-height:62px;line-height:1.25}
 .bottom-nav button[hidden],#adminNav[hidden]{display:none!important}
 @media(max-width:480px){#board>nav:not(.bottom-nav){position:static!important}#board>nav:not(.bottom-nav) #search{flex-basis:100%}.boss .top .badge{font-size:11px}.bottom-nav button{padding:7px 3px}}
+
+/* OneStore identity: display the existing representative crest in the actual app header. */
+.onestore-hero{display:flex;align-items:center;gap:clamp(12px,3vw,22px);padding:clamp(16px,4vw,28px)!important}
+.onestore-hero::after{display:none!important}
+.onestore-crest{display:block;position:relative;z-index:1;flex:0 0 auto;width:clamp(64px,17vw,88px);height:clamp(64px,17vw,88px);object-fit:contain;border:1px solid #d6a25d;border-radius:18px;background:radial-gradient(circle at 50% 25%,#5d2328,#110b0e 75%);box-shadow:0 0 0 3px #160c0e,inset 0 0 12px #0008,0 5px 18px #0009}
+.onestore-hero-copy{min-width:0;flex:1}
+.onestore-hero-copy p{margin-block:4px}
+.onestore-hero-copy h1{margin-block:4px;line-height:1.2}
+@media(max-width:480px){.onestore-hero{padding:14px!important;gap:11px}.onestore-hero-copy h1{font-size:clamp(19px,5.1vw,26px)}.onestore-hero-copy .eyebrow{font-size:10px;letter-spacing:.06em}.onestore-hero-copy p:last-child{font-size:12px}}
+@media(max-width:330px){.onestore-crest{width:54px;height:54px}.onestore-hero{gap:8px}}
