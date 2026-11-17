@@ -11,14 +11,21 @@ function kstInput(time){return new Date((time?Date.parse(time):Date.now())+9*360
 function validKstLocal(value){if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value))return false;const [y,mo,d,h,mi]=value.match(/\d+/g).map(Number);if(y<100||y>9999||mo<1||mo>12||h>23||mi>59)return false;return d>=1&&d<=new Date(Date.UTC(y,mo,0)).getUTCDate();}
 function input(label,value,type='text'){const l=node('label',label),i=node('input');i.type=type;i.value=value;l.append(i);return [l,i];}
 const SEARCH_ALIASES=Object.freeze({'바포':'바포메트','산두':'산적두목','산적':'산적두목','아르':'아르피어','네크맨':'네크로맨서','암대':'암흑대장로','오르':'오르쿠스','감데':'감시자 데몬','리칸':'리칸트','피닉':'피닉스','카스트':'가스트'});
+// Offline fallback is a nameplate, not a substitute for the 31 original boss portraits.
+function portraitPlaceholder(name){
+ const label=Array.from(String(name)).slice(0,4).join('');
+ const escaped=label.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+ const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><defs><linearGradient id="g" x2="1" y2="1"><stop stop-color="#5a2528"/><stop offset="1" stop-color="#130c13"/></linearGradient></defs><rect width="96" height="96" rx="12" fill="url(#g)"/><path d="M8 10h80v76H8z" fill="none" stroke="#d6ae6b" stroke-width="2"/><path d="M20 25l10-10 18 13 18-13 10 10-8 16H28z" fill="#d6ae6b" opacity=".8"/><text x="48" y="63" text-anchor="middle" font-size="17" font-weight="bold" fill="#ffe0a2">'+escaped+'</text><text x="48" y="78" text-anchor="middle" font-size="9" fill="#cfa76b">NO PORTRAIT</text></svg>';
+ return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+}
 function render(){const filter=$('search').value.trim();const normalizedFilter=SEARCH_ALIASES[filter]||filter;const searchTerms=filter?[...new Set([normalizedFilter,...Object.entries(SEARCH_ALIASES).filter(([alias,name])=>alias.includes(filter)||name.includes(filter)).map(([,name])=>name)])]:[];$('list').replaceChildren();$('fixedList').replaceChildren();const now=Date.now();const visible=[...bosses].sort((a,b)=>(a.time?Date.parse(a.time):Infinity)-(b.time?Date.parse(b.time):Infinity)).filter(b=>!searchTerms.length||searchTerms.some(term=>`${b.name} ${b.mapNumber}`.includes(term))).filter(b=>view==='all'||(view==='ready'&&b.time&&Date.parse(b.time)<=now)||(view==='soon'&&b.time&&Date.parse(b.time)>now&&Date.parse(b.time)<=now+3600000)||(view==='unscheduled'&&!b.time));for(const b of visible){
  const card=node('article',undefined,'boss'),top=node('div',undefined,'top');
  // Display bundled portraits when present; keep a clean text-only card if absent.
  const portrait=node('img',undefined,'boss-portrait');
  portrait.alt='';portrait.loading='lazy';portrait.decoding='async';
  portrait.src='boss-portraits/'+encodeURIComponent(b.name)+'.png';
- // Keep the OneStore portrait slot visible even before individual PNGs are bundled.
- portrait.onerror=()=>{if(portrait.dataset.fallback==='1')return;portrait.dataset.fallback='1';portrait.src='boss-icon.svg';portrait.classList.add('boss-portrait-fallback');portrait.alt=b.name+' 기본 아이콘';};
+ // Preserve a boss-specific, clearly labeled placeholder until an actual portrait PNG is bundled.
+ portrait.onerror=()=>{if(portrait.dataset.fallback==='1')return;portrait.dataset.fallback='1';portrait.onerror=null;portrait.src=portraitPlaceholder(b.name);portrait.classList.add('boss-portrait-fallback');portrait.alt=b.name+' 임시 이름표 (초상화 미등록)';};
  top.append(portrait,node('h2',b.name),node('span',!b.time?'시간 미등록':Date.parse(b.time)<=Date.now()?'출현 확인 중':'출현 대기','badge'));
  const when=node('div',undefined,'countdown');when.dataset.time=b.time||'';
  card.append(top,node('p',`맵 ${b.mapNumber||'미확정'} · ${(b.name==='네크로맨서'&&!b.fixedKstMinutes.length)?'고정 시간 확인 필요':b.fixedKstMinutes.length?'고정 '+b.fixedKstMinutes.map(m=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`).join(', '):b.intervalMinutes?b.intervalMinutes+'분 리젠':'리젠 미확정'} · 멍 ${b.misses}회`),when,node('p',date(b.time)));
