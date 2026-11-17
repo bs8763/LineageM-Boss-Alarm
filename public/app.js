@@ -28,9 +28,16 @@ function render(){const filter=$('search').value.trim();const normalizedFilter=S
  // Display bundled portraits when present; keep a clean text-only card if absent.
  const portrait=node('img',undefined,'boss-portrait');
  portrait.alt='';portrait.loading='lazy';portrait.decoding='async';
- portrait.src='boss-portraits/'+encodeURIComponent(b.name)+'.png';
- // Preserve a boss-specific, clearly labeled placeholder until an actual portrait PNG is bundled.
- portrait.onerror=()=>{if(portrait.dataset.fallback==='1')return;portrait.dataset.fallback='1';portrait.onerror=null;portrait.src=portraitPlaceholder(b.name);portrait.classList.add('boss-portrait-fallback');portrait.alt=b.name+' 임시 이름표 (초상화 미등록)';};
+ // Prefer bundled official portrait assets; support common formats without renaming source artwork.
+ const portraitBase='boss-portraits/'+encodeURIComponent(b.name);
+ const portraitFormats=['webp','png','jpg','jpeg'];let portraitAttempt=0;
+ portrait.onerror=()=>{
+  portraitAttempt+=1;
+  if(portraitAttempt<portraitFormats.length){portrait.src=portraitBase+'.'+portraitFormats[portraitAttempt];return;}
+  portrait.onerror=null;portrait.src=portraitPlaceholder(b.name);
+  portrait.classList.add('boss-portrait-fallback');portrait.alt=b.name+' 임시 이미지 (초상화 미등록)';
+ };
+ portrait.src=portraitBase+'.'+portraitFormats[0];
  top.append(portrait,node('h2',b.name),node('span',!b.time?'시간 미등록':Date.parse(b.time)<=Date.now()?'출현 확인 중':'출현 대기','badge'));
  const when=node('div',undefined,'countdown');when.dataset.time=b.time||'';
  card.append(top,node('p',`맵 ${b.mapNumber||'미확정'} · ${(b.name==='네크로맨서'&&!b.fixedKstMinutes.length)?'고정 시간 확인 필요':b.fixedKstMinutes.length?'고정 '+b.fixedKstMinutes.map(m=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`).join(', '):b.intervalMinutes?b.intervalMinutes+'분 리젠':'리젠 미확정'} · 멍 ${b.misses}회`),when,node('p',date(b.time)));
