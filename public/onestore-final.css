@@ -95,3 +95,30 @@ header h1 span{color:#f1c77e}
 .onestore-hero-copy h1{margin-block:4px;line-height:1.2}
 @media(max-width:480px){.onestore-hero{padding:14px!important;gap:11px}.onestore-hero-copy h1{font-size:clamp(19px,5.1vw,26px)}.onestore-hero-copy .eyebrow{font-size:10px;letter-spacing:.06em}.onestore-hero-copy p:last-child{font-size:12px}}
 @media(max-width:330px){.onestore-crest{width:54px;height:54px}.onestore-hero{gap:8px}}
+
+
+/* OneStore portrait-first boss cards: retain the original artwork's full frame.
+   No replacement artwork is generated or represented as official game art. */
+.boss .top .boss-portrait{
+  width:clamp(58px,15vw,76px);
+  height:clamp(58px,15vw,76px);
+  flex:0 0 clamp(58px,15vw,76px);
+  object-fit:contain;
+  object-position:center;
+  background:radial-gradient(circle at 50% 30%,#54302b,#120b10 76%);
+  border:2px solid #d6aa66;
+  border-radius:12px;
+  box-shadow:0 0 0 2px #170e12,0 5px 14px #000a;
+}
+.boss .top .boss-portrait-fallback{
+  border-style:dashed;
+  filter:saturate(.65);
+  opacity:.75;
+}
+.boss .top h2{font-size:clamp(15px,3.9vw,20px);line-height:1.3}
+#fixedSection .boss .top .boss-portrait{border-color:#f0c879}
+@media(max-width:380px){
+  .boss .top .boss-portrait{width:52px;height:52px;flex-basis:52px}
+  .boss .top{gap:8px}
+  .boss .top .badge{max-width:35%;font-size:10px}
+}
