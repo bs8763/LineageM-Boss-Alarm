@@ -17,3 +17,12 @@ header h1{margin:7px 0;line-height:1.22;word-break:keep-all;overflow-wrap:anywhe
 .bottom-nav button span{overflow:hidden;text-overflow:ellipsis;max-width:100%}
 #board .boss-group,#historySection,#admin{scroll-margin-top:92px}
 @media(max-width:480px){header{padding-right:100px!important}header::after{right:10px!important;width:76px;height:76px}header h1{font-size:clamp(20px,5.8vw,27px)}.boss .top{gap:7px}.boss .top .badge{max-width:40%}main{padding-bottom:calc(100px + env(safe-area-inset-bottom))}}
+
+/* OneStore mobile navigation and portrait polish: retain the full image slot. */
+.boss .top .boss-portrait{box-shadow:inset 0 0 0 1px #f4d39a22,0 2px 10px #0009}
+.boss .top .boss-portrait-fallback{object-fit:contain;padding:8px;background:radial-gradient(circle at 50% 25%,#4b2225,#100b10 72%);border-style:dashed}
+.bottom-nav{left:0!important;right:0!important;width:100%!important;box-sizing:border-box;padding-bottom:env(safe-area-inset-bottom)!important;background:linear-gradient(180deg,#231116,#09080b)!important;border-top:1px solid #b88952!important;box-shadow:0 -8px 24px #000a}
+.bottom-nav button{flex:1 1 0;min-height:56px;white-space:normal}
+.bottom-nav button.active{color:#ffdf9e!important;background:#632324!important}
+.boss-group h2{color:#f2d49b}
+@media(max-width:380px){.bottom-nav button{font-size:12px;padding-inline:3px}.boss .top .boss-portrait{width:46px;height:46px;flex-basis:46px}header{padding-right:92px!important}}
