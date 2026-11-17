@@ -60,9 +60,12 @@ jobs:
           cp public/style.css app/src/main/assets/style.css
           cp public/onestore-final.css app/src/main/assets/onestore-final.css
           cp public/boss-icon.svg app/src/main/assets/boss-icon.svg
+          # Never package stale portraits from a previous checkout/build.
+          rm -rf app/src/main/assets/boss-portraits
           if [ -d public/boss-portraits ]; then
             mkdir -p app/src/main/assets/boss-portraits
             cp -R public/boss-portraits/. app/src/main/assets/boss-portraits/
+            diff -qr public/boss-portraits app/src/main/assets/boss-portraits
           fi
           cmp public/index.html app/src/main/assets/index.html
           cmp public/manifest.webmanifest app/src/main/assets/manifest.webmanifest
@@ -128,9 +131,12 @@ jobs:
           cp public/style.css app/src/main/assets/style.css
           cp public/onestore-final.css app/src/main/assets/onestore-final.css
           cp public/boss-icon.svg app/src/main/assets/boss-icon.svg
+          # Never package stale portraits from a previous checkout/build.
+          rm -rf app/src/main/assets/boss-portraits
           if [ -d public/boss-portraits ]; then
             mkdir -p app/src/main/assets/boss-portraits
             cp -R public/boss-portraits/. app/src/main/assets/boss-portraits/
+            diff -qr public/boss-portraits app/src/main/assets/boss-portraits
           fi
           cmp public/index.html app/src/main/assets/index.html
           cmp public/manifest.webmanifest app/src/main/assets/manifest.webmanifest
@@ -154,6 +160,13 @@ jobs:
           done
           unzip -p "$APK" assets/index.html | grep -q 'bottom-nav' || { echo "::error::Bottom navigation missing from APK"; exit 1; }
           unzip -p "$APK" assets/index.html | grep -q 'fixedSection' || { echo "::error::Fixed boss section missing from APK"; exit 1; }
+          # Confirm every supplied portrait is actually inside the signed artifact.
+          if [ -d public/boss-portraits ]; then
+            find public/boss-portraits -type f | while IFS= read -r portrait; do
+              relative="${portrait#public/}"
+              unzip -p "$APK" "assets/$relative" | cmp - "$portrait" || { echo "::error::Portrait differs or is missing: $relative"; exit 1; }
+            done
+          fi
       - name: Verify APK signature and checksum
         run: |
           APK=app/build/outputs/apk/release/app-release.apk
