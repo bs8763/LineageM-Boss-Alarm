@@ -11,7 +11,9 @@ function kstInput(time){return new Date((time?Date.parse(time):Date.now())+9*360
 function validKstLocal(value){if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value))return false;const [y,mo,d,h,mi]=value.match(/\d+/g).map(Number);if(y<100||y>9999||mo<1||mo>12||h>23||mi>59)return false;return d>=1&&d<=new Date(Date.UTC(y,mo,0)).getUTCDate();}
 function input(label,value,type='text'){const l=node('label',label),i=node('input');i.type=type;i.value=value;l.append(i);return [l,i];}
 const SEARCH_ALIASES=Object.freeze({'바포':'바포메트','산두':'산적두목','산적':'산적두목','아르':'아르피어','네크맨':'네크로맨서','암대':'암흑대장로','오르':'오르쿠스','감데':'감시자 데몬','리칸':'리칸트','피닉':'피닉스','카스트':'가스트'});
-// Cache missing portrait names during this session; a page reload retries new assets.\nconst missingPortraits=new Set();\n// Offline fallback is a nameplate, not a substitute for the 31 original boss portraits.
+// Cache missing portrait names during this session; a page reload retries new assets.
+const missingPortraits=new Set();
+// Offline fallback is a nameplate, not a substitute for the 31 original boss portraits.
 function portraitPlaceholder(name){
  // Deterministic illustrated silhouette: clearly a placeholder, never official game artwork.
  const label=Array.from(String(name)).slice(0,4).join('');
