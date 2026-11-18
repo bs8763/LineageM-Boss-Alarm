@@ -11,20 +11,45 @@ function kstInput(time){return new Date((time?Date.parse(time):Date.now())+9*360
 function validKstLocal(value){if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value))return false;const [y,mo,d,h,mi]=value.match(/\d+/g).map(Number);if(y<100||y>9999||mo<1||mo>12||h>23||mi>59)return false;return d>=1&&d<=new Date(Date.UTC(y,mo,0)).getUTCDate();}
 function input(label,value,type='text'){const l=node('label',label),i=node('input');i.type=type;i.value=value;l.append(i);return [l,i];}
 const SEARCH_ALIASES=Object.freeze({'바포':'바포메트','산두':'산적두목','산적':'산적두목','아르':'아르피어','네크맨':'네크로맨서','암대':'암흑대장로','오르':'오르쿠스','감데':'감시자 데몬','리칸':'리칸트','피닉':'피닉스','카스트':'가스트'});
+// Cache missing portrait names during this session; a page reload retries new assets.
+const missingPortraits=new Set();
+// Offline fallback is a nameplate, not a substitute for the 31 original boss portraits.
+function portraitPlaceholder(name){
+ // Deterministic illustrated silhouette: clearly a placeholder, never official game artwork.
+ const label=Array.from(String(name)).slice(0,4).join('');
+ const escaped=label.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+ const seed=Array.from(String(name)).reduce((h,c)=>((h*33)^c.codePointAt(0))>>>0,5381);
+ const hue=seed%24; // Keep the clan's crimson/gold palette consistent.
+ const horns=seed%3===0?'<path d="M28 42Q12 24 18 8Q26 24 38 29M68 42Q84 24 78 8Q70 24 58 29" fill="#b58b58" stroke="#edcb8c" stroke-width="2"/>':seed%3===1?'<path d="M30 38L22 10 43 29M66 38L74 10 53 29" fill="#c9a66e"/>':'<path d="M27 38Q22 18 48 12Q74 18 69 38" fill="none" stroke="#d6ae6b" stroke-width="7"/>';
+ const eyes=seed%2?'<path d="M35 48h8m10 0h8" stroke="#ffce79" stroke-width="3"/>':'<circle cx="39" cy="48" r="3" fill="#ffce79"/><circle cx="57" cy="48" r="3" fill="#ffce79"/>';
+ const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="임시 보스 이미지"><defs><radialGradient id="bg"><stop stop-color="hsl('+hue+' 42% 25%)"/><stop offset="1" stop-color="#0e0a10"/></radialGradient><linearGradient id="armor" x2="1" y2="1"><stop stop-color="#6e3940"/><stop offset="1" stop-color="#201219"/></linearGradient></defs><rect width="96" height="96" rx="10" fill="url(#bg)"/><path d="M5 90Q10 65 32 61L48 68 64 61Q86 65 91 90" fill="url(#armor)" stroke="#aa8150" stroke-width="2"/>'+horns+'<path d="M26 39Q27 21 48 22Q69 21 70 39L65 60 48 69 31 60Z" fill="#291a20" stroke="#b28b5a" stroke-width="2"/>'+eyes+'<path d="M40 59L48 63 56 59" fill="none" stroke="#bd9260" stroke-width="2"/><rect x="3" y="3" width="90" height="90" rx="8" fill="none" stroke="#e3b96f" stroke-width="2"/><rect x="6" y="72" width="84" height="20" rx="3" fill="#110b11" fill-opacity=".92"/><text x="48" y="85" text-anchor="middle" font-size="12" font-weight="bold" fill="#ffe1a5">'+escaped+'</text><text x="48" y="11" text-anchor="middle" font-size="6" fill="#edc68d">임시 이미지</text></svg>';
+ return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+}
 function render(){const filter=$('search').value.trim();const normalizedFilter=SEARCH_ALIASES[filter]||filter;const searchTerms=filter?[...new Set([normalizedFilter,...Object.entries(SEARCH_ALIASES).filter(([alias,name])=>alias.includes(filter)||name.includes(filter)).map(([,name])=>name)])]:[];$('list').replaceChildren();$('fixedList').replaceChildren();const now=Date.now();const visible=[...bosses].sort((a,b)=>(a.time?Date.parse(a.time):Infinity)-(b.time?Date.parse(b.time):Infinity)).filter(b=>!searchTerms.length||searchTerms.some(term=>`${b.name} ${b.mapNumber}`.includes(term))).filter(b=>view==='all'||(view==='ready'&&b.time&&Date.parse(b.time)<=now)||(view==='soon'&&b.time&&Date.parse(b.time)>now&&Date.parse(b.time)<=now+3600000)||(view==='unscheduled'&&!b.time));for(const b of visible){
  const card=node('article',undefined,'boss'),top=node('div',undefined,'top');
- // Portraits are optional bundled assets; never request external images or hide a boss on failure.
- const portrait=node('img');portrait.className='boss-portrait';portrait.alt='';portrait.loading='lazy';portrait.decoding='async';portrait.src='boss-portraits/'+encodeURIComponent(String(b.id))+'.webp';portrait.onerror=()=>{portrait.remove();};top.append(portrait);
- top.append(node('h2',b.name),node('span',!b.time?'시간 미등록':Date.parse(b.time)<=Date.now()?'출현 확인 중':'출현 대기','badge'));
+ // Display bundled portraits when present; keep a clean text-only card if absent.
+ const portrait=node('img',undefined,'boss-portrait');
+ portrait.alt='';portrait.loading='lazy';portrait.decoding='async';
+ // Prefer bundled official portrait assets; support common formats without renaming source artwork.
+ const portraitBase='boss-portraits/'+encodeURIComponent(b.name);
+ const portraitFormats=['webp','png','jpg','jpeg'];let portraitAttempt=0;
+ const usePlaceholder=()=>{portrait.onerror=null;portrait.src=portraitPlaceholder(b.name);portrait.classList.add('boss-portrait-fallback');portrait.alt=b.name+' 임시 이미지 (초상화 미등록)';};
+ portrait.onerror=()=>{
+  portraitAttempt+=1;
+  if(portraitAttempt<portraitFormats.length){portrait.src=portraitBase+'.'+portraitFormats[portraitAttempt];return;}
+  missingPortraits.add(b.name);usePlaceholder();
+ };
+ if(missingPortraits.has(b.name))usePlaceholder();else portrait.src=portraitBase+'.'+portraitFormats[0];
+ top.append(portrait,node('h2',b.name),node('span',!b.time?'시간 미등록':Date.parse(b.time)<=Date.now()?'출현 확인 중':'출현 대기','badge'));
  const when=node('div',undefined,'countdown');when.dataset.time=b.time||'';
- card.append(top,node('p',`맵 ${b.mapNumber||'미확정'} · ${b.fixedKstMinutes.length?'고정 '+b.fixedKstMinutes.map(m=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`).join(', '):b.intervalMinutes?b.intervalMinutes+'분 리젠':'리젠 미확정'} · 멍 ${b.misses}회`),when,node('p',date(b.time)));
+ card.append(top,node('p',`맵 ${b.mapNumber||'미확정'} · ${(b.name==='네크로맨서'&&!b.fixedKstMinutes.length)?'고정 시간 확인 필요':b.fixedKstMinutes.length?'고정 '+b.fixedKstMinutes.map(m=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`).join(', '):b.intervalMinutes?b.intervalMinutes+'분 리젠':'리젠 미확정'} · 멍 ${b.misses}회`),when,node('p',date(b.time)));
  const actions=node('div',undefined,'actions'),[label,time]=input('처치 / 예약 시각 (한국시간)',kstInput(null),'datetime-local');
  const act=async(action,withTime=false)=>{const selectedTime=withTime?time.value:'';if(withTime&&(!validKstLocal(selectedTime)))throw Error('올바른 한국시간을 선택하세요');const result=await post(`/api/bosses/${b.id}/action`,{action,expectedVersion:b.version,...(withTime?{time:new Date(selectedTime+':00+09:00').toISOString()}:{})});say(`${result.name} ${action==='cut'?'컷':action==='miss'?'멍':'예약'} 저장 완료 · 다음 출현 ${date(result.time)} · 멍 ${result.misses}회 · 디스코드 전송 대기`);};
  actions.append(button('컷',()=>act('cut',true)),button('멍',async()=>{if(confirm(`${b.name} 멍 처리 후 다음 주기로 넘길까요?`))await act('miss');},'secondary'));
  const detail=node('details'),summary=node('summary','시간 예약·수정');detail.append(summary,label,button('이 시간에 출현 예약',()=>act('schedule',true),'secondary'));
  card.append(actions,detail);
  if(isAdmin){const settings=node('details');settings.append(node('summary','관리자 보스 설정'));const [ml,map]=input('맵 번호',b.mapNumber),[il,interval]=input('주기 리젠(분, 고정 시간이면 비움)',b.intervalMinutes||'','number'),[fl,fixed]=input('고정 한국시간 (예: 14:00,20:00)',b.fixedKstMinutes.map(m=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`).join(','));settings.append(ml,il,fl,node('p',b.note));settings.append(button('설정 저장·혈맹 확인',()=>{const list=fixed.value.trim()?fixed.value.split(',').map(x=>{if(!/^\d{2}:\d{2}$/.test(x.trim()))throw Error('고정 시간 형식 HH:mm');const [h,m]=x.trim().split(':').map(Number);if(h>23||m>59)throw Error('고정 시간 범위 오류');return h*60+m;}):[];return json(`/api/bosses/${b.id}`,{method:'PATCH',body:JSON.stringify({mapNumber:map.value,intervalMinutes:interval.value?Number(interval.value):null,fixedKstMinutes:list,verified:true})});},'secondary'));card.append(settings);}
- (Array.isArray(b.fixedKstMinutes)&&b.fixedKstMinutes.length?$('fixedList'):$('list')).append(card);
+ ((b.name==='네크로맨서'||(Array.isArray(b.fixedKstMinutes)&&b.fixedKstMinutes.length))?$('fixedList'):$('list')).append(card);
  }if(!$('list').childElementCount)$('list').append(node('p','표시할 일반 보스가 없습니다.','hint'));if(!$('fixedList').childElementCount)$('fixedList').append(node('p','표시할 고정 보스가 없습니다.','hint'));$('regularSection').hidden=false;$('fixedSection').hidden=false;tick();}
 function tick(){for(const e of document.querySelectorAll('[data-time]')){if(!e.dataset.time){e.textContent='미등록';continue;}const sec=Math.ceil((Date.parse(e.dataset.time)-Date.now())/1000);if(sec<=0)e.textContent=`출현 확인 중 · ${Math.floor(-sec/60)}분 경과${sec<=-600?' · 자동 멍 처리 확인 중':''}`;else e.textContent=`${Math.floor(sec/3600)}시간 ${Math.floor(sec%3600/60)}분 ${sec%60}초 후`;}}
 async function load(){if(!key)return;if(inflight){pendingLoad=true;return;}const sessionKey=key;inflight=true;try{const nextBosses=await json('/api/bosses');if(key!==sessionKey)return;const history=await json('/api/history');if(key!==sessionKey)return;bosses=nextBosses;render();$('history').replaceChildren();for(const h of history.slice(0,60)){const row=node('div',`#${h.id} ${h.name} · ${h.action}${h.count?' '+h.count+'회':''} · ${date(h.at)}`,'record');if(isAdmin&&h.previous)row.append(button('기록 복구',async()=>{if(confirm('해당 변경 직전 상태로 복구할까요?'))await post('/api/admin/undo',{eventId:h.id});},'secondary'));$('history').append(row);}$('summary').textContent=`전체 ${bosses.length}종 · 예정 ${bosses.filter(b=>b.time).length}종 · 출현 확인 ${bosses.filter(b=>b.time&&Date.parse(b.time)<=Date.now()).length}종`;say(`동기화 완료 · ${date(new Date().toISOString())}`);}catch(e){if(key===sessionKey)say(`연결 대기 / 오류: ${e.message} · 절전 해제 후 새로고침하세요`);}finally{inflight=false;if(pendingLoad){pendingLoad=false;if(key)void load();}}}
