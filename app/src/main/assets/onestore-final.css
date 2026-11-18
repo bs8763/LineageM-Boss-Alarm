@@ -1,0 +1,124 @@
+/* OneStore final mobile layout: black, crimson and gold; optional boss portraits. */
+:root{--on-ink:#0b090c;--on-crimson:#8e2927;--on-gold:#e6bd78}
+html,body{background-color:var(--on-ink);color:#f2e5d3}
+header{display:flex;flex-direction:column;justify-content:center;min-height:132px;padding:18px clamp(100px,25vw,160px) 18px 16px!important}
+header::after{left:auto!important;right:12px!important;top:50%;transform:translateY(-50%);width:clamp(70px,18vw,112px);height:clamp(70px,18vw,112px);max-width:30%;background:url('boss-icon.svg') center/contain no-repeat}
+header h1{margin:7px 0;line-height:1.22;word-break:keep-all;overflow-wrap:anywhere}
+#login{border:1px solid #80513d;box-shadow:0 8px 24px #0008}
+#connect{background:linear-gradient(180deg,#9b3931,#5c1b1c);border-color:#d3a15c;color:#ffe5b6}
+#board>nav:not(.bottom-nav){top:0!important;z-index:20}
+.boss .top{padding-left:0!important;min-height:48px}
+.boss .top::before{display:none!important}
+.boss .top .boss-portrait{position:static!important;inset:auto!important;display:block!important;width:54px;height:54px;flex:0 0 54px;object-fit:cover;border:1px solid var(--on-gold);border-radius:9px;background:#160e12}
+.boss .top h2{flex:1;min-width:0;overflow-wrap:anywhere}
+#fixedList .boss{border-left:3px solid #d4a15d}
+.bottom-nav{top:auto!important;bottom:0!important;position:fixed!important}
+.bottom-nav button{min-width:0}
+.bottom-nav button span{overflow:hidden;text-overflow:ellipsis;max-width:100%}
+#board .boss-group,#historySection,#admin{scroll-margin-top:92px}
+@media(max-width:480px){header{padding-right:100px!important}header::after{right:10px!important;width:76px;height:76px}header h1{font-size:clamp(20px,5.8vw,27px)}.boss .top{gap:7px}.boss .top .badge{max-width:40%}main{padding-bottom:calc(100px + env(safe-area-inset-bottom))}}
+
+/* OneStore mobile navigation and portrait polish: retain the full image slot. */
+.boss .top .boss-portrait{box-shadow:inset 0 0 0 1px #f4d39a22,0 2px 10px #0009}
+.boss .top .boss-portrait-fallback{object-fit:contain;padding:8px;background:radial-gradient(circle at 50% 25%,#4b2225,#100b10 72%);border-style:dashed}
+.bottom-nav{left:0!important;right:0!important;width:100%!important;box-sizing:border-box;padding-bottom:env(safe-area-inset-bottom)!important;background:linear-gradient(180deg,#231116,#09080b)!important;border-top:1px solid #b88952!important;box-shadow:0 -8px 24px #000a}
+.bottom-nav button{flex:1 1 0;min-height:56px;white-space:normal}
+.bottom-nav button.active{color:#ffdf9e!important;background:#632324!important}
+.boss-group h2{color:#f2d49b}
+@media(max-width:380px){.bottom-nav button{font-size:12px;padding-inline:3px}.boss .top .boss-portrait{width:46px;height:46px;flex-basis:46px}header{padding-right:92px!important}}
+
+/* Restore the OneStore-style hierarchy across login, boss board and history.
+   Actual boss artwork must be provided separately; never present fallback art as originals. */
+:root{color-scheme:dark;--on-panel:#1a1015;--on-panel-edge:#6e3b36;--on-muted:#c9b5a6}
+body{background:radial-gradient(ellipse at 50% -10%,#431b22 0,#160d12 42%,#09080b 85%) fixed}
+main{max-width:980px;margin-inline:auto}
+header{position:relative;isolation:isolate;overflow:hidden;border:1px solid #9b633c;border-radius:14px;background:linear-gradient(115deg,#37141d 0%,#170d13 65%,#0d0a0d 100%);box-shadow:inset 0 1px #e6bd7833,0 10px 30px #0007}
+header::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:repeating-linear-gradient(130deg,transparent 0 22px,#e6bd7807 23px 24px)}
+header .eyebrow{color:#dcb67d;letter-spacing:.11em}
+header h1 span{color:#f1c77e}
+#login,#board .boss-group,#historySection,#admin{background:linear-gradient(165deg,#26151c,#130e12);border:1px solid var(--on-panel-edge);border-radius:12px}
+#login{padding:clamp(16px,4vw,28px)}
+#login input{min-height:44px;background:#100b0f;color:#fff0d8;border:1px solid #a37750}
+#login input:focus-visible,button:focus-visible,.bottom-nav button:focus-visible{outline:2px solid #ffdb9b;outline-offset:2px}
+.clan-toolbar{background:linear-gradient(90deg,#5a1e26,#211017);border:1px solid #b58a53;border-radius:10px;color:#f4d39a}
+#summary{color:#efd2a2}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.filters .filter-button{border:1px solid #84563e;background:#24141b;color:#f0d7bd;border-radius:8px}
+.filters .filter-button.selected{background:#74252c;color:#ffe5ae;border-color:#e2b777}
+.boss-group{padding:clamp(10px,2.5vw,18px)}
+.boss{background:linear-gradient(145deg,#29171d,#160f14);border:1px solid #754739;border-radius:10px;box-shadow:0 4px 12px #0005}
+.boss .top{align-items:center}
+.boss .top h2{color:#f9e4be}
+.boss .top .boss-portrait{box-sizing:border-box;overflow:hidden}
+.boss .top .boss-portrait-fallback{padding:0;opacity:.8;border-style:dashed}
+.boss .countdown{color:#f4c27d;font-variant-numeric:tabular-nums}
+.boss .actions button{background:linear-gradient(#963630,#5c1d25);border:1px solid #d4a265;color:#fff0d7}
+.boss .actions button.secondary{background:#282027;border-color:#9b7152}
+#fixedList .boss{border-left:4px solid #e0b56b}
+#history .record,#backupList .record{border-bottom:1px solid #64413b;color:#e4c9af}
+.bottom-nav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#e2c5a5}
+.bottom-nav button span{display:block;font-size:clamp(10px,2.8vw,13px)}
+.bottom-nav button.active{box-shadow:inset 0 3px #e6bd78}
+@media(max-width:480px){#board .boss-group,#historySection,#admin{padding:10px}.boss{padding:10px}.boss .top .boss-portrait{width:52px;height:52px;flex-basis:52px}.bottom-nav{z-index:50}}
+@media(prefers-reduced-motion:reduce){.bottom-nav *,button{scroll-behavior:auto!important;transition:none!important}}
+
+
+/* OneStore mobile finishing pass: readable controls, persistent bottom navigation,
+   safe-area spacing and a distinct fixed-boss panel. No unofficial artwork is implied. */
+#board{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+#board>nav:not(.bottom-nav){display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:#170e14;border:1px solid #76503c;border-radius:10px;padding:9px}
+#board>nav:not(.bottom-nav) #search{flex:1 1 180px;min-width:0;background:#0f0b0e;color:#f7e6cf;border:1px solid #9b7152;border-radius:8px;min-height:44px}
+#board>nav:not(.bottom-nav) button{min-height:44px}
+#login label,#admin label,.boss details label{color:#f0d3a6}
+#login button,#admin button,.boss button{min-height:42px}
+#login .hint{color:#d9c1aa}
+.boss .top{display:flex;flex-wrap:nowrap;gap:10px}
+.boss .top .badge{flex-shrink:0;max-width:42%;text-align:center}
+.boss .actions{display:flex;gap:8px;flex-wrap:wrap}
+.boss .actions button{flex:1 1 110px}
+.boss details{margin-top:10px;border-top:1px solid #65403a;padding-top:8px}
+.boss details summary{cursor:pointer;color:#f4d39a;min-height:32px}
+#fixedSection{border-color:#b18a54!important;background:linear-gradient(160deg,#31221a,#140f13)!important}
+#fixedSection h2{color:#ffe0a1}
+#historySection{min-height:90px}
+.bottom-nav{max-width:none!important;min-height:calc(62px + env(safe-area-inset-bottom));display:flex!important;align-items:stretch;justify-content:space-around}
+.bottom-nav button{border:0!important;border-radius:0!important;min-width:0;min-height:62px;line-height:1.25}
+.bottom-nav button[hidden],#adminNav[hidden]{display:none!important}
+@media(max-width:480px){#board>nav:not(.bottom-nav){position:static!important}#board>nav:not(.bottom-nav) #search{flex-basis:100%}.boss .top .badge{font-size:11px}.bottom-nav button{padding:7px 3px}}
+
+/* OneStore identity: display the existing representative crest in the actual app header. */
+.onestore-hero{display:flex;flex-direction:row!important;justify-content:flex-start!important;align-items:center;gap:clamp(12px,3vw,22px);min-height:132px;box-sizing:border-box;padding:clamp(16px,4vw,28px)!important}
+.onestore-hero::after{display:none!important}
+.onestore-crest{display:block;position:relative;z-index:1;flex:0 0 auto;width:clamp(64px,17vw,88px);height:clamp(64px,17vw,88px);object-fit:contain;border:1px solid #d6a25d;border-radius:18px;background:radial-gradient(circle at 50% 25%,#5d2328,#110b0e 75%);box-shadow:0 0 0 3px #160c0e,inset 0 0 12px #0008,0 5px 18px #0009}
+.onestore-hero-copy{min-width:0;flex:1}
+.onestore-hero-copy p{margin-block:4px}
+.onestore-hero-copy h1{margin-block:4px;line-height:1.2}
+@media(max-width:480px){.onestore-hero{padding:14px!important;gap:11px}.onestore-hero-copy h1{font-size:clamp(19px,5.1vw,26px)}.onestore-hero-copy .eyebrow{font-size:10px;letter-spacing:.06em}.onestore-hero-copy p:last-child{font-size:12px}}
+@media(max-width:330px){.onestore-crest{width:54px;height:54px}.onestore-hero{gap:8px}}
+
+
+/* OneStore portrait-first boss cards: retain the original artwork's full frame.
+   No replacement artwork is generated or represented as official game art. */
+.boss .top .boss-portrait{
+  width:clamp(58px,15vw,76px);
+  height:clamp(58px,15vw,76px);
+  flex:0 0 clamp(58px,15vw,76px);
+  object-fit:contain;
+  object-position:center;
+  background:radial-gradient(circle at 50% 30%,#54302b,#120b10 76%);
+  border:2px solid #d6aa66;
+  border-radius:12px;
+  box-shadow:0 0 0 2px #170e12,0 5px 14px #000a;
+}
+.boss .top .boss-portrait-fallback{
+  border-style:dashed;
+  filter:saturate(.65);
+  opacity:.75;
+}
+.boss .top h2{font-size:clamp(15px,3.9vw,20px);line-height:1.3}
+#fixedSection .boss .top .boss-portrait{border-color:#f0c879}
+@media(max-width:380px){
+  .boss .top .boss-portrait{width:52px;height:52px;flex-basis:52px}
+  .boss .top{gap:8px}
+  .boss .top .badge{max-width:35%;font-size:10px}
+}
