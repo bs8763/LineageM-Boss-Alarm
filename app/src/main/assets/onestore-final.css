@@ -122,3 +122,10 @@ header h1 span{color:#f1c77e}
   .boss .top{gap:8px}
   .boss .top .badge{max-width:35%;font-size:10px}
 }
+
+/* Use the real crest element once: the legacy header pseudo-element otherwise duplicates it. */
+header.onestore-hero:has(> .onestore-crest)::after{content:none!important;display:none!important}
+header.onestore-hero{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:clamp(10px,3vw,22px);padding:16px!important;min-height:112px}
+header.onestore-hero>.onestore-crest{position:static!important;display:block!important;flex:0 0 clamp(64px,18vw,88px);width:clamp(64px,18vw,88px);height:clamp(64px,18vw,88px);object-fit:contain;max-width:26%}
+header.onestore-hero>.onestore-hero-copy{min-width:0;flex:1}
+@media(max-width:380px){header.onestore-hero{padding:12px!important;gap:9px}header.onestore-hero>.onestore-crest{flex-basis:58px;width:58px;height:58px}}
