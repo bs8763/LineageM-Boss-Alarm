@@ -176,3 +176,200 @@ header h1{line-height:1.2;font-weight:800;text-shadow:0 2px 8px #000,0 0 20px #a
 header{isolation:isolate;overflow:hidden;padding-right:clamp(90px,24vw,168px)}
 header::after{content:"";position:absolute;left:auto;right:12px;top:50%;width:clamp(72px,19vw,132px);aspect-ratio:1;transform:translateY(-50%);background:url('boss-icon.svg') center/contain no-repeat;opacity:.78;filter:drop-shadow(0 0 12px #a34a2b66);pointer-events:none;z-index:-1}
 @media(max-width:390px){header{padding-right:92px}header::after{right:6px;width:78px;opacity:.68}}
+
+/* Galaxy WebView: reserve status-bar space for the sticky search controls. */
+:root{--app-top-inset:max(env(safe-area-inset-top, 0px), 28px)}
+#board>nav:not(.bottom-nav){top:var(--app-top-inset)!important;scroll-margin-top:calc(var(--app-top-inset) + 72px);z-index:20}
+#board .boss-group,#historySection,#admin{scroll-margin-top:calc(var(--app-top-inset) + 90px)}
+/* The emblem belongs at the right; do not squeeze the Korean title between two reserved icon slots. */
+header{padding-left:17px!important;padding-right:clamp(92px,25vw,165px)!important}
+header h1{overflow-wrap:normal;word-break:keep-all;font-size:clamp(21px,5.2vw,32px);line-height:1.3}
+header::after{left:auto!important;right:12px}
+@media(max-width:390px){header{padding-left:14px!important;padding-right:90px!important}header h1{font-size:clamp(20px,5.5vw,25px)}}
+
+/* Galaxy portrait layout: keep search and controls clear of the system status bar. */
+@media(max-width:679px){
+  main{padding-top:max(12px, env(safe-area-inset-top, 0px));overflow-x:clip}
+  #board>nav:not(.bottom-nav){top:max(32px, env(safe-area-inset-top, 0px))!important;padding-top:12px;padding-bottom:12px}
+  #board>nav:not(.bottom-nav) input{min-height:48px;font-size:16px}
+  header{min-width:0}
+  header h1{overflow-wrap:break-word;word-break:keep-all;hyphens:none}
+  .boss,.boss-group,#fixedSection{min-width:0}
+  .boss .top{gap:8px}
+  .boss .actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .boss .actions button{min-width:0;width:100%;margin:0}
+}
+
+/* Show a legible placeholder until each licensed boss portrait is bundled. */
+.boss .top .boss-portrait-fallback{display:grid;place-items:center;color:#f1cf8b;font-size:13px;font-weight:800;letter-spacing:-.04em;background:radial-gradient(circle at 50% 30%,#623125,#1a1115 75%);user-select:none}
+
+/* Portraits occupy the emblem slot; avoid drawing a second emblem beneath them. */
+.boss .top:has(> .boss-portrait)::before{content:none}
+.boss .top .boss-portrait{display:block;flex:none;overflow:hidden;line-height:1;text-align:center}
+.boss .top .boss-portrait-fallback{line-height:1.2;padding:3px;overflow-wrap:anywhere;text-align:center}
+@media(max-width:360px){.boss .top .boss-portrait-fallback{font-size:11px}}
+
+/* OneStore portrait card restoration: image-led hierarchy with a fixed 64px art slot. */
+.boss .top{min-height:72px;padding-left:78px;gap:10px}
+.boss .top .boss-portrait,.boss .top::before{width:66px;height:66px;top:3px;border-radius:8px}
+.boss .top .boss-portrait{object-fit:cover;background:radial-gradient(circle at 50% 25%,#603126,#100d12 80%);border:2px solid #a77745;box-shadow:inset 0 0 0 1px #201317,0 3px 12px #000c}
+.boss .top .boss-portrait-fallback{font-family:Georgia,'Noto Serif KR',serif;font-size:17px;font-weight:800;text-shadow:0 2px 5px #000;background:radial-gradient(circle at 50% 24%,#71382b,#241419 55%,#0d0b10);border:2px solid #a77745}
+#fixedList .boss .top .boss-portrait{border-color:#dfb56e}
+#fixedList .boss .top .boss-portrait-fallback{background:radial-gradient(circle at 50% 24%,#70502d,#261b19 55%,#0d0b10);color:#ffe0a0}
+.boss .top h2{font-size:18px;line-height:1.3}
+.boss .top .badge{align-self:flex-start;margin-top:5px}
+@media(max-width:390px){
+ .boss .top{min-height:61px;padding-left:65px;gap:6px}
+ .boss .top .boss-portrait,.boss .top::before{width:56px;height:56px;top:2px}
+ .boss .top .boss-portrait-fallback{font-size:14px}
+ .boss .top h2{font-size:15px}
+}
+
+/* OneStore portrait-first cards: keep artwork and status visually separate on Galaxy. */
+.boss .top{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:8px;padding-left:78px}
+.boss .top h2{grid-column:1;min-width:0;line-height:1.35;word-break:keep-all}
+.boss .top .badge{grid-column:2;max-width:104px;align-self:center;margin:0}
+.boss .top .boss-portrait,.boss .top::before{top:50%;transform:translateY(-50%)}
+.boss .top .boss-portrait-fallback{font-family:Georgia,'Noto Serif KR',serif}
+#fixedList .boss{border-left-width:4px}
+#fixedSection>h2::after{content:' · 정시 출현';font-size:12px;font-weight:500;color:#d6b37e}
+.boss .actions button:focus-visible,.bottom-nav button:focus-visible{outline:2px solid #f1ca84;outline-offset:2px}
+@media(max-width:390px){
+ .boss .top{padding-left:65px;column-gap:5px}
+ .boss .top .badge{max-width:82px}
+}
+
+/* OneStore portrait-first layout: give original boss art a full 66px square,
+   without cropping boss names or hiding cut/miss controls on Galaxy phones. */
+.boss .top{min-height:70px;padding-left:78px;gap:10px;align-items:center}
+.boss .top::before,.boss .top .boss-portrait{width:66px;height:66px;border-radius:8px}
+.boss .top .boss-portrait{object-fit:cover;object-position:center;background:#171015}
+.boss .top .boss-portrait-fallback{font-size:15px;padding:5px;line-height:1.25}
+.boss .top h2{min-width:0;flex:1;line-height:1.35;word-break:keep-all;overflow-wrap:anywhere}
+.boss .top .badge{flex:0 0 auto;max-width:104px;white-space:normal;line-height:1.3}
+#fixedList .boss .top .boss-portrait{border-color:#d4a35c}
+@media(max-width:390px){
+ .boss .top{min-height:62px;padding-left:68px;gap:6px}
+ .boss .top::before,.boss .top .boss-portrait{width:58px;height:58px}
+ .boss .top .badge{max-width:78px;font-size:10px;padding:4px 5px}
+ .boss .top h2{font-size:15px}
+}
+@media(min-width:680px){.boss .top{min-height:70px}}
+
+
+/* Consolidated OneStore header and boss portrait layout.
+   Keep the emblem on the right so the title does not overlap on Galaxy screens. */
+header{padding-left:17px!important;padding-right:clamp(92px,25vw,165px)!important}
+header::after{left:auto!important;right:12px;top:50%;width:clamp(72px,19vw,132px);height:auto;aspect-ratio:1;transform:translateY(-50%);background:url("boss-icon.svg") center/contain no-repeat}
+.boss-group>h2{background:linear-gradient(90deg,#481e1e 0%,#1b1215 75%);padding:11px 12px;border-left:3px solid #d7a55d;border-bottom:1px solid #68402f}
+#regularSection .boss{border-left:3px solid #8e302a}
+#fixedList .boss{border-left:4px solid #c99c57}
+.boss .top{min-height:72px;padding-left:78px;gap:10px}
+.boss .top::before,.boss .top .boss-portrait{width:66px;height:66px}
+@media(max-width:390px){
+ header{padding-left:14px!important;padding-right:90px!important}
+ header::after{right:6px;width:78px}
+ .boss .top{min-height:64px;padding-left:68px;gap:6px}
+ .boss .top::before,.boss .top .boss-portrait{width:58px;height:58px}
+ .boss .top .badge{max-width:78px}
+}
+
+
+/* Unified OneStore portrait layout: consistent 66px framed portraits and readable
+   status labels on Galaxy screens, including when original art is unavailable. */
+.boss .top{
+  display:grid;
+  grid-template-columns:66px minmax(0,1fr) auto;
+  align-items:center;
+  gap:10px;
+  padding-left:0;
+  min-height:66px;
+}
+.boss .top::before,
+.boss .top .boss-portrait{
+  position:relative;
+  inset:auto;
+  grid-column:1;
+  grid-row:1;
+  width:66px;
+  height:66px;
+  border-radius:7px;
+}
+.boss .top::before{content:'⚔';font-size:28px}
+#fixedList .boss .top::before{content:'♛'}
+.boss .top .boss-portrait{z-index:2;object-fit:cover}
+.boss .top h2{
+  grid-column:2;
+  grid-row:1;
+  margin:0;
+  min-width:0;
+  font-size:clamp(15px,2.8vw,19px);
+  line-height:1.35;
+  overflow-wrap:anywhere;
+}
+.boss .top .badge{
+  grid-column:3;
+  grid-row:1;
+  max-width:106px;
+  min-width:0;
+  overflow-wrap:break-word;
+}
+.boss .top .boss-portrait-fallback{
+  font-size:14px;
+  padding:5px;
+  color:#f4d39a;
+  border:1px solid #ad7547;
+}
+@media(max-width:390px){
+  .boss .top{grid-template-columns:58px minmax(0,1fr) auto;gap:7px;min-height:58px}
+  .boss .top::before,.boss .top .boss-portrait{width:58px;height:58px}
+  .boss .top .badge{max-width:80px;font-size:10px}
+}
+
+/* OneStore clan password entry: full-width, touch-friendly and clearly labeled. */
+#login label[for="token"]{display:block;margin:12px 0 7px;color:#e9c58d;font-size:14px;font-weight:700}
+#login #token{display:block;width:100%;min-height:50px;font-size:16px;border:1px solid #96613f;background:#100d10;color:#f6e9d9}
+#login #loginHelp{margin:8px 0 12px;color:#c5ac9c;font-size:12px;line-height:1.5}
+#login #connect{margin-top:8px;background:linear-gradient(180deg,#9b3931,#651e20);border-color:#bb7048;color:#fff1d9}
+
+/* Portrait-free OneStore layout: boss names receive the full card width. */
+.boss .top{padding-left:0;min-height:0}
+.boss .top::before{content:none;display:none}
+@media(max-width:360px){.boss .top{padding-left:0}}
+/* Prevent the fixed bottom menu from covering the last card on phones. */
+#board{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+.bottom-nav button:focus-visible{outline:2px solid #f0c37b;outline-offset:-3px}
+
+/* OneStore mobile header: keep title readable beside the emblem on narrow Galaxy screens. */
+@media(max-width:480px){
+ header{display:grid;grid-template-columns:minmax(0,1fr) 68px;column-gap:10px;align-content:center;padding:18px 12px;min-height:120px}
+ header .eyebrow,header h1,header p:last-child{grid-column:1;min-width:0;margin:3px 0;overflow-wrap:break-word}
+ header h1{font-size:clamp(20px,5.5vw,26px);line-height:1.3}
+ header::after{right:12px;left:auto;top:50%;width:64px;height:64px;transform:translateY(-50%)}
+}
+@media(max-width:360px){header{grid-template-columns:minmax(0,1fr) 54px;gap:6px}header h1{font-size:20px}header::after{width:52px;height:52px}}
+
+
+/* Final portrait-free card grid: do not reserve an empty 66px portrait column.
+   Keep boss names and state badges visible on narrow Galaxy screens. */
+.boss .top{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:8px;
+  min-height:0;
+  padding-left:0;
+}
+.boss .top h2{grid-column:1;grid-row:1}
+.boss .top .badge{grid-column:2;grid-row:1;max-width:106px}
+@media(max-width:390px){
+  .boss .top{grid-template-columns:minmax(0,1fr) auto;gap:6px;min-height:0}
+  .boss .top .badge{max-width:80px}
+}
+/* Earlier desktop icon reservation used !important; override it for mobile. */
+@media(max-width:480px){
+  header{padding-left:12px!important;padding-right:84px!important;display:block}
+  header h1{max-width:100%;word-break:keep-all}
+}
+@media(max-width:360px){
+  header{padding-right:68px!important}
+}
