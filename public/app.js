@@ -11,7 +11,7 @@ function kstInput(time){return new Date((time?Date.parse(time):Date.now())+9*360
 function validKstLocal(value){if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value))return false;const [y,mo,d,h,mi]=value.match(/\d+/g).map(Number);if(y<100||y>9999||mo<1||mo>12||h>23||mi>59)return false;return d>=1&&d<=new Date(Date.UTC(y,mo,0)).getUTCDate();}
 function input(label,value,type='text'){const l=node('label',label),i=node('input');i.type=type;i.value=value;l.append(i);return [l,i];}
 const SEARCH_ALIASES=Object.freeze({'바포':'바포메트','산두':'산적두목','산적':'산적두목','아르':'아르피어','네크맨':'네크로맨서','암대':'암흑대장로','오르':'오르쿠스','감데':'감시자 데몬','리칸':'리칸트','피닉':'피닉스','카스트':'가스트'});
-// Offline fallback is a nameplate, not a substitute for the 31 original boss portraits.
+// Cache missing portrait names during this session; a page reload retries new assets.\nconst missingPortraits=new Set();\n// Offline fallback is a nameplate, not a substitute for the 31 original boss portraits.
 function portraitPlaceholder(name){
  // Deterministic illustrated silhouette: clearly a placeholder, never official game artwork.
  const label=Array.from(String(name)).slice(0,4).join('');
@@ -31,13 +31,13 @@ function render(){const filter=$('search').value.trim();const normalizedFilter=S
  // Prefer bundled official portrait assets; support common formats without renaming source artwork.
  const portraitBase='boss-portraits/'+encodeURIComponent(b.name);
  const portraitFormats=['webp','png','jpg','jpeg'];let portraitAttempt=0;
+ const usePlaceholder=()=>{portrait.onerror=null;portrait.src=portraitPlaceholder(b.name);portrait.classList.add('boss-portrait-fallback');portrait.alt=b.name+' 임시 이미지 (초상화 미등록)';};
  portrait.onerror=()=>{
   portraitAttempt+=1;
   if(portraitAttempt<portraitFormats.length){portrait.src=portraitBase+'.'+portraitFormats[portraitAttempt];return;}
-  portrait.onerror=null;portrait.src=portraitPlaceholder(b.name);
-  portrait.classList.add('boss-portrait-fallback');portrait.alt=b.name+' 임시 이미지 (초상화 미등록)';
+  missingPortraits.add(b.name);usePlaceholder();
  };
- portrait.src=portraitBase+'.'+portraitFormats[0];
+ if(missingPortraits.has(b.name))usePlaceholder();else portrait.src=portraitBase+'.'+portraitFormats[0];
  top.append(portrait,node('h2',b.name),node('span',!b.time?'시간 미등록':Date.parse(b.time)<=Date.now()?'출현 확인 중':'출현 대기','badge'));
  const when=node('div',undefined,'countdown');when.dataset.time=b.time||'';
  card.append(top,node('p',`맵 ${b.mapNumber||'미확정'} · ${(b.name==='네크로맨서'&&!b.fixedKstMinutes.length)?'고정 시간 확인 필요':b.fixedKstMinutes.length?'고정 '+b.fixedKstMinutes.map(m=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`).join(', '):b.intervalMinutes?b.intervalMinutes+'분 리젠':'리젠 미확정'} · 멍 ${b.misses}회`),when,node('p',date(b.time)));
