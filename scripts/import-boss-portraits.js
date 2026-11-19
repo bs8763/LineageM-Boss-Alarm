@@ -1,11 +1,13 @@
 // Import a complete, user-authorized set of boss portraits into both web and APK assets.
-// Usage: node scripts/import-boss-portraits.js /path/to/31-portraits
+// Usage: node scripts/import-boss-portraits.js /path/to/31-portraits [--partial]
+// --partial imports available valid portraits without requiring all 31.
 // Source files must be named exactly as the catalog boss names (webp/png/jpg/jpeg).
 import { CATALOG } from '../src/catalog.js';
 import { mkdir, copyFile, readdir, readFile } from 'node:fs/promises';
 import { join, extname, basename, resolve } from 'node:path';
 
 const source = process.argv[2];
+const partial = process.argv.slice(3).includes('--partial');
 if (!source) {
   console.error('Usage: node scripts/import-boss-portraits.js <source-directory>');
   process.exitCode = 2;
@@ -22,7 +24,8 @@ if (!source) {
     if (selected.has(name)) errors.push('Duplicate portrait: ' + name);
     else selected.set(name, file);
   }
-  for (const name of names) if (!selected.has(name)) errors.push('Missing portrait: ' + name);
+  if (!partial) for (const name of names) if (!selected.has(name)) errors.push('Missing portrait: ' + name);
+  if (partial && selected.size === 0) errors.push('No matching boss portraits found');
   if (names.length !== 31 || new Set(names).size !== 31) errors.push('Catalog is not 31 unique bosses');
   // Check image signatures before writing any destination file.
   for (const [name, file] of selected) {
@@ -43,6 +46,7 @@ if (!source) {
       for (const [name, file] of selected)
         await copyFile(join(resolve(source), file), join(dest, name + extname(file).toLowerCase()));
     }
-    console.log('Imported 31 validated portraits to web and Android assets.');
+    console.log(`Imported ${selected.size}/31 validated portraits to web and Android assets.`);
+    if (partial) console.log(`Still missing ${names.length - selected.size} portraits from this source directory.`);
   }
 }
