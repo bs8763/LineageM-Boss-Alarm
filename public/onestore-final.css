@@ -129,3 +129,16 @@ header.onestore-hero{display:flex!important;flex-direction:row!important;align-i
 header.onestore-hero>.onestore-crest{position:static!important;display:block!important;flex:0 0 clamp(64px,18vw,88px);width:clamp(64px,18vw,88px);height:clamp(64px,18vw,88px);object-fit:contain;max-width:26%}
 header.onestore-hero>.onestore-hero-copy{min-width:0;flex:1}
 @media(max-width:380px){header.onestore-hero{padding:12px!important;gap:9px}header.onestore-hero>.onestore-crest{flex-basis:58px;width:58px;height:58px}}
+
+/* OneStore board: keep the fixed menu usable on short landscape screens and
+   prevent the last boss action from disappearing underneath it. */
+#board{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
+#regularSection,#fixedSection,#historySection,#admin{scroll-margin-top:16px;scroll-margin-bottom:calc(92px + env(safe-area-inset-bottom))}
+.bottom-nav{padding-left:max(8px,env(safe-area-inset-left))!important;padding-right:max(8px,env(safe-area-inset-right))!important}
+.bottom-nav button:focus-visible{outline:2px solid #ffe0a1!important;outline-offset:-4px}
+@media(max-height:520px) and (orientation:landscape){
+ .bottom-nav{min-height:calc(48px + env(safe-area-inset-bottom))}
+ .bottom-nav button{min-height:48px;flex-direction:row;gap:6px;padding:4px 8px}
+ .bottom-nav button span{font-size:12px}
+ #board{padding-bottom:calc(70px + env(safe-area-inset-bottom))}
+}
