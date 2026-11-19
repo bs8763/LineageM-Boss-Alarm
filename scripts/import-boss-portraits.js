@@ -2,10 +2,12 @@
 // Usage: node scripts/import-boss-portraits.js /path/to/31-portraits [--partial]
 // --partial imports available valid portraits without requiring all 31.
 // Source files must be named exactly as the catalog boss names (webp/png/jpg/jpeg).
+import { fileURLToPath } from 'node:url';
 import { CATALOG } from '../src/catalog.js';
-import { mkdir, copyFile, readdir, readFile } from 'node:fs/promises';
-import { join, extname, basename, resolve } from 'node:path';
+import { mkdir, copyFile, readdir, readFile, rm } from 'node:fs/promises';
+import { join, extname, basename, resolve, dirname } from 'node:path';
 
+const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const source = process.argv[2];
 const partial = process.argv.slice(3).includes('--partial');
 if (!source) {
@@ -41,10 +43,14 @@ if (!source) {
     console.error(errors.join('\n'));
     process.exitCode = 1;
   } else {
-    for (const dest of ['public/boss-portraits', 'app/src/main/assets/boss-portraits']) {
+    for (const relativeDest of ['public/boss-portraits', 'app/src/main/assets/boss-portraits']) {
+      const dest = join(projectRoot, relativeDest);
       await mkdir(dest, { recursive: true });
-      for (const [name, file] of selected)
+      for (const [name, file] of selected) {
+        // Remove stale formats so the app's WebP-first fallback cannot display an old portrait.
+        for (const ext of formats) await rm(join(dest, name + ext), { force: true });
         await copyFile(join(resolve(source), file), join(dest, name + extname(file).toLowerCase()));
+      }
     }
     console.log(`Imported ${selected.size}/31 validated portraits to web and Android assets.`);
     if (partial) console.log(`Still missing ${names.length - selected.size} portraits from this source directory.`);
