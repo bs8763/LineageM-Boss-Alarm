@@ -63,7 +63,11 @@ $('backup').onclick=()=>perform(async()=>{const response=await api('/api/admin/b
 $('restore').onclick=()=>perform(async()=>{const f=$('restoreFile').files[0];if(!f)throw Error('백업 파일을 선택하세요');if(f.size>1500000)throw Error('백업은 1.5MB 이하');const snapshot=JSON.parse(await f.text());if(confirm('전체 데이터를 이 백업으로 복원할까요?'))await post('/api/admin/restore',{snapshot,confirm:'RESTORE'});});
 $('backups').onclick=()=>perform(async()=>{const items=await json('/api/admin/backups');$('backupList').replaceChildren();for(const x of items){const row=node('div',`${x.created_at?date(x.created_at):x.id} · ${x.reason||'자동 백업'}`,'record');row.append(button('복원',async()=>{if(confirm('선택한 자동 백업으로 복원할까요?'))await post('/api/admin/restore',{backupId:x.id,confirm:'RESTORE'});},'secondary'));$('backupList').append(row);}});
 $('reset').onclick=()=>perform(async()=>{if(prompt('전체 시간·멍을 초기화하려면 RESET 입력')==='RESET')await post('/api/admin/reset',{confirm:'RESET'});});
-setInterval(tick,1000);setInterval(()=>{if(!document.hidden&&!mutation&&!['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName))load();},30000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)load();});
+setInterval(tick,1000);
+// Do not discard a clan member's in-progress reservation or admin edits during refresh.
+function editingBossDetails(){return [...document.querySelectorAll('.boss details[open]')].some(detail=>detail.querySelector('input:focus, select:focus, textarea:focus')||detail.querySelector('input:not([type=hidden]):not([disabled])'));}
+setInterval(()=>{if(!document.hidden&&!mutation&&!['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName)&&!editingBossDetails())load();},30000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!editingBossDetails())load();});
 
 for(const [id,mode] of [['filterAll','all'],['filterReady','ready'],['filterSoon','soon'],['filterUnscheduled','unscheduled']]){const el=$(id);if(el)el.onclick=()=>{view=mode;document.querySelectorAll('.filter-button').forEach(x=>x.classList.toggle('selected',x===el));render();};}
 
