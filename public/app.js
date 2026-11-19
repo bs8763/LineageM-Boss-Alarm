@@ -65,7 +65,11 @@ $('backups').onclick=()=>perform(async()=>{const items=await json('/api/admin/ba
 $('reset').onclick=()=>perform(async()=>{if(prompt('전체 시간·멍을 초기화하려면 RESET 입력')==='RESET')await post('/api/admin/reset',{confirm:'RESET'});});
 setInterval(tick,1000);
 // Do not discard a clan member's in-progress reservation or admin edits during refresh.
-function editingBossDetails(){return [...document.querySelectorAll('.boss details[open]')].some(detail=>detail.querySelector('input:focus, select:focus, textarea:focus')||detail.querySelector('input:not([type=hidden]):not([disabled])'));}
+// Pause polling only while a member is actively editing a reservation or admin setting.
+// Merely expanding a details panel must not permanently stop clan-board updates.
+const dirtyBossDetails=new WeakSet();
+document.addEventListener('input',event=>{const detail=event.target.closest?.('.boss details');if(detail)dirtyBossDetails.add(detail);});
+function editingBossDetails(){return [...document.querySelectorAll('.boss details[open]')].some(detail=>dirtyBossDetails.has(detail)||detail.contains(document.activeElement)&&['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName));}
 setInterval(()=>{if(!document.hidden&&!mutation&&!['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName)&&!editingBossDetails())load();},30000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!editingBossDetails())load();});
 
