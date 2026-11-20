@@ -158,11 +158,21 @@ jobs:
           APK=app/build/outputs/apk/release/app-release.apk
           "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --verbose --print-certs "$APK"
           (cd app/build/outputs/apk/release && sha256sum app-release.apk > SHA256SUMS.txt)
+      - name: Record release APK provenance
+        shell: bash
+        run: |
+          set -eu
+          OUT=app/build/outputs/apk/release
+          printf 'source_commit=%s\nsource_ref=%s\nworkflow_run=%s\napk_bytes=%s\n' \
+            "$GITHUB_SHA" "$GITHUB_REF" "$GITHUB_RUN_ID" "$(wc -c < "$OUT/app-release.apk" | tr -d ' ')" \
+            > "$OUT/BUILD-INFO.txt"
+          cat "$OUT/SHA256SUMS.txt" >> "$OUT/BUILD-INFO.txt"
       - uses: actions/upload-artifact@v4
         with:
           name: LineageM-Boss-Alarm-signed-release-${{ github.sha }}
           path: |
             app/build/outputs/apk/release/app-release.apk
             app/build/outputs/apk/release/SHA256SUMS.txt
+            app/build/outputs/apk/release/BUILD-INFO.txt
           if-no-files-found: error
           retention-days: 14
