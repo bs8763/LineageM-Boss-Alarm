@@ -65,6 +65,7 @@ jobs:
           cmp public/app.js app/src/main/assets/app.js
           cmp public/style.css app/src/main/assets/style.css
           cmp public/onestore-final.css app/src/main/assets/onestore-final.css
+          cmp public/boss-icon.svg app/src/main/assets/boss-icon.svg
       - name: Build and lint
         run: gradle --no-daemon :app:lintDebug :app:assembleDebug
         env:
@@ -129,6 +130,7 @@ jobs:
           cmp public/app.js app/src/main/assets/app.js
           cmp public/style.css app/src/main/assets/style.css
           cmp public/onestore-final.css app/src/main/assets/onestore-final.css
+          cmp public/boss-icon.svg app/src/main/assets/boss-icon.svg
       - name: Build signed release APK
         env:
           ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/release.keystore
@@ -138,6 +140,7 @@ jobs:
           BOSS_APP_URL: ${{ vars.BOSS_APP_URL || 'https://ami37pk16s.apps.bot-hosting.cloud' }}
         run: gradle --no-daemon :app:lintRelease :app:assembleRelease
       - name: Verify bundled offline clan interface
+        shell: bash
         run: |
           APK=app/build/outputs/apk/release/app-release.apk
           test -s "$APK"
@@ -146,6 +149,10 @@ jobs:
           done
           unzip -p "$APK" assets/index.html | grep -q 'bottom-nav' || { echo "::error::Bottom navigation missing from APK"; exit 1; }
           unzip -p "$APK" assets/index.html | grep -q 'fixedSection' || { echo "::error::Fixed boss section missing from APK"; exit 1; }
+          unzip -p "$APK" assets/index.html | grep -q '5분 미확인 시 자동 멍 처리' || { echo "::error::APK does not contain the 5-minute auto-miss rule"; exit 1; }
+          for asset in index.html style.css onestore-final.css app.js boss-icon.svg manifest.webmanifest; do
+            cmp "public/$asset" <(unzip -p "$APK" "assets/$asset") || { echo "::error::Stale bundled APK asset: $asset"; exit 1; }
+          done
       - name: Verify APK signature and checksum
         run: |
           APK=app/build/outputs/apk/release/app-release.apk
