@@ -1,11 +1,11 @@
 const $=id=>document.getElementById(id);let key='',isAdmin=false,bosses=[],inflight=false,pendingLoad=false,mutation=false,view='all';
 function say(message){$('status').textContent=message;}
-async function api(path,options={}){const response=await fetch(path,{...options,headers:{'Content-Type':'application/json',Authorization:`Bearer ${key}`,...options.headers},signal:AbortSignal.timeout(90000)});if(!response.ok){const err=await response.json().catch(()=>({error:`서버 응답 ${response.status}`}));throw Error(err.error);}return response;}
+async function api(path,options={}){const response=await fetch(path,{...options,headers:{'Content-Type':'application/json',Authorization:`Bearer ${key}`,...options.headers},signal:AbortSignal.timeout(90000)});if(!response.ok){const err=await response.json().catch(()=>({error:`서버 응답 ${response.status}`}));const failure=Error(err.error);failure.status=response.status;throw failure;}return response;}
 const json=async(path,options)=>(await api(path,options)).json();
 const post=(path,body)=>json(path,{method:'POST',body:JSON.stringify(body)});
 function node(tag,text,cls){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;}
 function button(label,handler,cls){const b=node('button',label,cls);b.type='button';b.onclick=()=>perform(handler);return b;}
-async function perform(fn){if(mutation)return;mutation=true;document.querySelectorAll('button').forEach(b=>b.disabled=true);try{const changed=await fn();if(changed!==false)await load();}catch(e){say(e.message);}finally{mutation=false;document.querySelectorAll('button').forEach(b=>b.disabled=false);}}
+async function perform(fn){if(mutation)return;mutation=true;document.querySelectorAll('button').forEach(b=>b.disabled=true);try{const changed=await fn();if(changed!==false)await load();}catch(e){if(e.status===409){await load();say(`다른 혈맹원이 먼저 변경했습니다. 최신 현황을 불러왔으니 다시 확인하세요. (${e.message})`);}else say(e.message);}finally{mutation=false;document.querySelectorAll('button').forEach(b=>b.disabled=false);}}
 function date(time){return time?new Date(time).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}):'시간 미등록';}
 function kstInput(time){return new Date((time?Date.parse(time):Date.now())+9*3600000).toISOString().slice(0,16);}
 function validKstLocal(value){if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value))return false;const [y,mo,d,h,mi]=value.match(/\d+/g).map(Number);if(y<100||y>9999||mo<1||mo>12||h>23||mi>59)return false;return d>=1&&d<=new Date(Date.UTC(y,mo,0)).getUTCDate();}
