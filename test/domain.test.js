@@ -24,3 +24,5 @@ test('Necromancer is odd-hour notice only and never records cut, miss or schedul
  b.time=new Date(T).toISOString();advance(s,T+GRACE+60000);
  assert.equal(b.misses,0);assert.equal(b.time,new Date(T).toISOString());
 });
+
+test('Necromancer notice-only invariant blocks configured automatic misses and server-open',()=>{const s=initialState();const b=s.bosses.find(x=>x.id==='boss-21');assert.throws(()=>configure(s,b.id,{intervalMinutes:120},'admin'));assert.throws(()=>configure(s,b.id,{fixedKstMinutes:[60]},'admin'));b.intervalMinutes=120;b.time=new Date(T).toISOString();advance(s,T+GRACE+1);assert.equal(b.misses,0);assert.equal(b.lastAction,null);});
