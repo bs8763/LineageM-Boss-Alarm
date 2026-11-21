@@ -117,7 +117,10 @@ export async function startDiscord(service,env=process.env){
    await service.store.transaction(async s=>{
     const now=Date.now(),pending=s.outbox.filter(e=>!e.sentAt).slice(0,5);
     for(const e of pending){if(now-Date.parse(e.at)>(String(e.id).startsWith('alarm-')?90000:6*3600000)){e.sentAt='expired';continue;}
-     try{const b=s.bosses.find(b=>b.id===e.bossId);const content=formatBossEvent(e,b);if(content===null){e.sentAt='superseded';continue;}await channel.send({content,allowedMentions:{parse:[]}});e.sentAt=new Date().toISOString();}catch{e.attempts++;break;}}
+     try{const b=s.bosses.find(b=>b.id===e.bossId);
+     // Revalidate at delivery time: a cut, miss or server-open can change the spawn after queueing.
+     if(String(e.id).startsWith('alarm-')&&(!b||b.time!==e.time)){e.sentAt='superseded';continue;}
+     const content=formatBossEvent(e,b);if(content===null){e.sentAt='superseded';continue;}await channel.send({content,allowedMentions:{parse:[]}});e.sentAt=new Date().toISOString();}catch{e.attempts++;break;}}
     s.outbox=s.outbox.slice(-1000);return null;
    });
   }catch{console.error('Discord delivery failed; will retry');}finally{publishing=false;}
