@@ -38,7 +38,7 @@ export function act(s,{id,action,time,expectedVersion,actor='web'},now=Date.now(
  b.lastAction=action;event(s,b,action,actor,now,{previous,time:b.time});return b;
 }
 export function configure(s,id,input,actor,now=Date.now()){
- const b=findBoss(s,id);const map=String(input.mapNumber??b.mapNumber).trim();if(map.length>80)throw new DomainError('맵 번호가 너무 깁니다');
+ const b=findBoss(s,id);if(b.id==='boss-21'&&(input.intervalMinutes!=null||Array.isArray(input.fixedKstMinutes)&&input.fixedKstMinutes.length))throw new DomainError('네크로맨서는 홀수 시간 안내 전용이며 리젠·고정시간을 설정할 수 없습니다');const map=String(input.mapNumber??b.mapNumber).trim();if(map.length>80)throw new DomainError('맵 번호가 너무 깁니다');
  const rawInterval=Object.hasOwn(input,'intervalMinutes')?input.intervalMinutes:b.intervalMinutes;
  const interval=rawInterval===null?null:Number(rawInterval);
  const fixed=input.fixedKstMinutes??b.fixedKstMinutes;
@@ -86,7 +86,7 @@ export function undo(s,eventId,actor,now=Date.now()){const e=s.history.find(e=>e
 export function serverOpenPlan(s,openTime,now=Date.now()){
  const opened=Date.parse(iso(openTime));
  if(opened>now+60000)throw new DomainError('서버오픈 시간은 미래일 수 없습니다');
- const updated=s.bosses.filter(b=>!b.fixedKstMinutes?.length&&b.intervalMinutes).map(b=>({
+ const updated=s.bosses.filter(b=>b.id!=='boss-21'&&!b.fixedKstMinutes?.length&&b.intervalMinutes).map(b=>({
   id:b.id,name:b.name,previousTime:b.time,time:new Date(opened+b.intervalMinutes*60000).toISOString()
  }));
  if(!updated.length)throw new DomainError('변경할 일반 보스가 없습니다');
