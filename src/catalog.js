@@ -13,6 +13,6 @@ const rows = [
 ];
 export const CATALOG = rows.map(([name,intervalMinutes,mapNumber,fixedKstMinutes],i)=>({
  id:`boss-${String(i+1).padStart(2,'0')}`,name,mapNumber,intervalMinutes,
- fixedKstMinutes:fixedKstMinutes||[], verified:false,
- note: name==='네크로맨서'?'홀수 시간 출현: 정확한 분 미확정. 관리자 설정 전 자동 넘김 비활성':name==='바포메트'?'14:00~14:30 / 20:00~20:30 출현 창 시작 기준':'기본 참고표: 혈맹 기준 확인 필요'
+ fixedKstMinutes:fixedKstMinutes||[], oddHourNoticeOnly:name==='네크로맨서', verified:false,
+ note: name==='네크로맨서'?'홀수 시간(01·03·05·07·09·11·13·15·17·19·21·23시) 출현 안내만 표시. 컷·멍 및 자동 멍 제외':name==='바포메트'?'14:00~14:30 / 20:00~20:30 출현 창 시작 기준':'기본 참고표: 혈맹 기준 확인 필요'
 }));
