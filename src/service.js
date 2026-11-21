@@ -35,5 +35,12 @@ export function queueAlarms(s,now=Date.now()){
    s.alarmKeys.push(id);s.outbox.push({id,bossId:b.id,name:b.name,action:minutes?`${minutes}분 전`:'출현 예정',at:new Date(now).toISOString(),time:b.time,attempts:0});
   }
  }
+ // Pending alerts for an earlier spawn must never announce an obsolete time.
+ // Preserve sent entries for audit; only supersede unsent alarm messages.
+ const currentTimes=new Map(s.bosses.map(b=>[b.id,b.time]));
+ for(const e of s.outbox){
+  if(!e.sentAt&&String(e.id).startsWith('alarm-')&&currentTimes.get(e.bossId)!==e.time)
+   e.sentAt='superseded';
+ }
  s.alarmKeys=s.alarmKeys.slice(-1000);s.outbox=s.outbox.slice(-1000);
 }
