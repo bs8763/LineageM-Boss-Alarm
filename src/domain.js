@@ -15,7 +15,7 @@ const BOSS_ALIASES = Object.freeze({'바포':'바포메트','산두':'산적두�
 export function findBoss(s,id){const name=typeof id==='string'?id.trim().replace(/\s+/gu,' '):id;let b=s.bosses.find(b=>b.id===name||b.name===name);if(!b&&typeof name==='string'){const mapped=BOSS_ALIASES[name]||name;b=s.bosses.find(x=>x.name===mapped);if(!b&&name.length>=2){const matches=s.bosses.filter(x=>x.name.startsWith(name));if(matches.length===1)b=matches[0];else if(matches.length>1)throw new DomainError('약칭이 여러 보스와 겹칩니다. 이름을 더 길게 입력하세요');}}if(!b)throw new DomainError('보스를 찾을 수 없습니다',404);return b;}
 function event(s,b,action,actor,now,details={}){s.revision++;b.version++;const e={id:s.revision,bossId:b.id,name:b.name,action,actor,at:new Date(now).toISOString(),...details};s.history.push(e);s.history=s.history.slice(-1000);s.outbox.push({...e,bossSnapshot:{id:b.id,name:b.name,mapNumber:b.mapNumber,time:b.time,misses:b.misses,lastAction:b.lastAction,version:b.version},attempts:0});s.outbox=s.outbox.slice(-1000);return e;}
 export function advance(s,now=Date.now()){
- for(const b of s.bosses){if(!b.time||(!b.intervalMinutes&&!b.fixedKstMinutes.length))continue;
+ for(const b of s.bosses){if(b.id==='boss-21'||!b.time||(!b.intervalMinutes&&!b.fixedKstMinutes.length))continue;
  const due=Date.parse(b.time);if(now<due+GRACE)continue;
  let count=0,next=due;
  if(!b.fixedKstMinutes.length){count=Math.floor((now-due-GRACE)/(b.intervalMinutes*60000))+1;next=due+count*b.intervalMinutes*60000;}
@@ -27,7 +27,7 @@ export function advance(s,now=Date.now()){
  }return s;
 }
 export function act(s,{id,action,time,expectedVersion,actor='web'},now=Date.now()){
- const b=findBoss(s,id);if(expectedVersion!==undefined&&expectedVersion!==b.version)throw new DomainError('다른 사용자가 수정했습니다. 새로고침 후 다시 시도하세요',409);
+ const b=findBoss(s,id);if(b.id==='boss-21'&&['cut','miss','schedule'].includes(action))throw new DomainError('네크로맨서는 홀수 시간 안내 전용이며 컷·멍·예약을 사용하지 않습니다');if(expectedVersion!==undefined&&expectedVersion!==b.version)throw new DomainError('다른 사용자가 수정했습니다. 새로고침 후 다시 시도하세요',409);
  const at=time?Date.parse(iso(time)):now;if(at>now+60000&&(action==='cut'||action==='miss'))throw new DomainError('컷·멍은 미래 시간으로 기록할 수 없습니다');
  const previous={time:b.time,misses:b.misses,lastAction:b.lastAction};
  if(action==='schedule'){b.time=iso(time);b.misses=0;}
