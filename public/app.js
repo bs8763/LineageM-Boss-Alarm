@@ -6,7 +6,7 @@ const post=(path,body)=>json(path,{method:'POST',body:JSON.stringify(body)});
 function node(tag,text,cls){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;}
 function button(label,handler,cls){const b=node('button',label,cls);b.type='button';b.onclick=()=>perform(handler);return b;}
 async function perform(fn){if(mutation)return;mutation=true;document.querySelectorAll('button').forEach(b=>b.disabled=true);try{const changed=await fn();if(changed!==false)await load();}catch(e){if(e.status===409){const refreshed=await load();say(refreshed?`다른 혈맹원이 먼저 변경했습니다. 최신 현황을 불러왔으니 다시 확인하세요. (${e.message})`:`다른 혈맹원이 먼저 변경했습니다. 최신 현황 동기화에 실패했으니 연결을 확인하고 새로고침하세요. (${e.message})`);}else say(e.message);}finally{mutation=false;document.querySelectorAll('button').forEach(b=>b.disabled=false);}}
-function date(time){return time?new Date(time).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}):'시간 미등록';}
+function date(time){if(!time)return '시간 미등록';const parsed=new Date(time);return Number.isFinite(parsed.getTime())?parsed.toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}):'시간 확인 필요';}
 function kstInput(time){const parsed=time?Date.parse(time):Date.now();const timestamp=Number.isFinite(parsed)?parsed:Date.now();return new Date(timestamp+9*3600000).toISOString().slice(0,16);}
 function validKstLocal(value){if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value))return false;const [y,mo,d,h,mi]=value.match(/\d+/g).map(Number);if(y<100||y>9999||mo<1||mo>12||h>23||mi>59)return false;return d>=1&&d<=new Date(Date.UTC(y,mo,0)).getUTCDate();}
 function input(label,value,type='text'){const l=node('label',label),i=node('input');i.type=type;i.value=value;l.append(i);return [l,i];}
