@@ -26,3 +26,13 @@ test('Necromancer is odd-hour notice only and never records cut, miss or schedul
 });
 
 test('Necromancer notice-only invariant blocks configured automatic misses and server-open',()=>{const s=initialState();const b=s.bosses.find(x=>x.id==='boss-21');assert.throws(()=>configure(s,b.id,{intervalMinutes:120},'admin'));assert.throws(()=>configure(s,b.id,{fixedKstMinutes:[60]},'admin'));b.intervalMinutes=120;b.time=new Date(T).toISOString();advance(s,T+GRACE+1);assert.equal(b.misses,0);assert.equal(b.lastAction,null);});
+
+
+test('Necromancer never queues Discord pre-spawn alerts even with legacy scheduled data',async()=>{
+ const {queueAlarms}=await import('../src/service.js');
+ const s=initialState(),b=s.bosses.find(x=>x.id==='boss-21');
+ b.time=new Date(T).toISOString();b.intervalMinutes=120;
+ queueAlarms(s,T-10*60000);
+ assert.equal(s.outbox.length,0);
+ assert.equal(s.alarmKeys.length,0);
+});
