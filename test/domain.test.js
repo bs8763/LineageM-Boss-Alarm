@@ -15,3 +15,12 @@ test('10/5-minute alarms are durable, deduplicated and skip missed cold-start wi
 test('API rejects rollover dates and config patches preserve an unknown interval',()=>{const s=initialState();assert.throws(()=>act(s,{id:'서드',action:'schedule',time:'2026-02-30T00:00:00Z'}));configure(s,'네크로맨서',{mapNumber:'미확정'},'admin');assert.equal(s.bosses.find(b=>b.name==='네크로맨서').intervalMinutes,null);});
 
 test('clan boss reference includes 가스트 and 네크로맨서, not 카스트 or 베리스',()=>{const bosses=initialState().bosses;assert.equal(bosses.length,31);assert.equal(bosses.find(b=>b.name==='가스트')?.mapNumber,'46');assert.equal(bosses.find(b=>b.name==='네크로맨서')?.mapNumber,'18');assert.equal(bosses.find(b=>b.name==='네크로맨서')?.intervalMinutes,null);assert.ok(!bosses.some(b=>['카스트','베리스'].includes(b.name)));});
+
+
+test('Necromancer is odd-hour notice only and never records cut, miss or scheduled time',()=>{
+ const s=initialState();const b=s.bosses.find(x=>x.name==='네크로맨서');
+ assert.equal(b.oddHourNoticeOnly,true);
+ for(const action of ['cut','miss','schedule'])assert.throws(()=>act(s,{id:b.id,action,time:new Date(T).toISOString()},T),/홀수 시간 안내 전용/);
+ b.time=new Date(T).toISOString();advance(s,T+GRACE+60000);
+ assert.equal(b.misses,0);assert.equal(b.time,new Date(T).toISOString());
+});
