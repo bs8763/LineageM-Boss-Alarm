@@ -3,8 +3,8 @@ import path from 'node:path';
 import pg from 'pg';
 import {initialState,migrateLegacy,validateSnapshot,upgradeCatalog} from './domain.js';
 export class Store {
- constructor({url=process.env.DATABASE_URL,file=process.env.DATA_FILE||'data/state.json',requireDatabase=process.env.RENDER==='true'}={}){
-  if(requireDatabase&&!url)throw Error('Render에서는 DATABASE_URL 영구 저장소가 필수입니다. 로컬 파일로 실행하지 않습니다.');
+ constructor({url=process.env.DATABASE_URL,file=process.env.DATA_FILE||'data/state.json',requireDatabase=process.env.NODE_ENV==='production'||process.env.RENDER==='true'}={}){
+  if(requireDatabase&&!url)throw Error('운영 환경에서는 DATABASE_URL 영구 저장소가 필수입니다. 로컬 파일로 실행하지 않습니다.');
   this.file=file;this.tail=Promise.resolve();this.pool=url?new pg.Pool({connectionString:url,max:3,connectionTimeoutMillis:10000,idleTimeoutMillis:30000}):null;
   this.pool?.on('error',()=>console.error('Database idle connection failed; retry on next operation'));
  }
