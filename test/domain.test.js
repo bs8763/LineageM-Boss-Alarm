@@ -125,3 +125,17 @@ test('editing a verified boss map does not silently revoke administrator verific
  assert.equal(findVerified(s),false);
  function findVerified(state){return state.bosses.find(b=>b.name==='서드').verified;}
 });
+
+
+test('pending Discord spawn alarm is superseded when a boss schedule is removed',async()=>{
+ const {queueAlarms}=await import('../src/service.js');
+ const s=initialState(),b=s.bosses.find(x=>x.id==='boss-01');
+ const due=T+10*60000;
+ b.time=new Date(due).toISOString();b.intervalMinutes=120;
+ queueAlarms(s,T);
+ assert.equal(s.outbox.length,1);
+ assert.equal(s.outbox[0].sentAt,undefined);
+ b.intervalMinutes=null;b.fixedKstMinutes=[];
+ queueAlarms(s,T+1000);
+ assert.equal(s.outbox[0].sentAt,'superseded');
+});
