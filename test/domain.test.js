@@ -59,3 +59,13 @@ test('scheduler tick triggers at five-minute auto-miss boundary and skips notice
  await service.tick();
  assert.equal(reads,1);
 });
+
+
+test('Discord alarm queue ignores malformed legacy scheduled timestamps',async()=>{
+ const {queueAlarms}=await import('../src/service.js');
+ const s=initialState(),boss=s.bosses.find(b=>b.id==='boss-01');
+ boss.time='invalid-legacy-time';
+ queueAlarms(s,T);
+ assert.equal(s.outbox.length,0);
+ assert.equal(s.alarmKeys.length,0);
+});
