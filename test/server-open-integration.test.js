@@ -116,19 +116,24 @@ test('Discord staging routes and admin-only command definitions apply immediatel
  assert.equal(commandRoute({commandName:'검증서버오픈',guildId:'guild',channelId:'other'},env),null);
 });
 
-test('Discord guild command registration uses only the staging names and leaves existing commands intact',async()=>{
- const existing=[{name:'운영전용'}],posted=[];
+test('Discord guild command registration atomically replaces stale commands with staging names',async()=>{
+ const calls=[];
  const rest={
-  post:async(route,{body})=>{assert.equal(route,'/staging');posted.push(body);return {name:body.name,id:'mock-'+posted.length};},
-  get:async route=>{assert.equal(route,'/staging');return [...existing,...posted.map(x=>({name:x.name}))];}
+  put:async(route,{body})=>{
+   assert.equal(route,'/staging');
+   calls.push(body);
+   return body.map((command,index)=>({...command,id:'mock-'+(index+1)}));
+  },
+  post:async()=>{throw Error('POST must not be used for command synchronization');}
  };
  const result=await registerGuildCommands(rest,'/staging',true);
- assert.equal(posted.length,6);
+ assert.equal(calls.length,1);
+ assert.equal(calls[0].length,6);
  assert.equal(result.registered.length,6);
- assert.equal(result.actualNames.includes('운영전용'),true);
- assert.ok(posted.every(c=>c.name.startsWith('검증')));
- assert.ok(posted.some(c=>c.name==='검증서버오픈'));
- assert.ok(posted.some(c=>c.name==='검증서버오픈취소'));
+ assert.equal(result.actualNames.includes('운영전용'),false);
+ assert.ok(calls[0].every(c=>c.name.startsWith('검증')));
+ assert.ok(calls[0].some(c=>c.name==='검증서버오픈'));
+ assert.ok(calls[0].some(c=>c.name==='검증서버오픈취소'));
 });
 test('Discord command handlers enforce admin, apply without confirmation, prevent duplicates, and undo',async()=>{
  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'boss-discord-server-open-'));
