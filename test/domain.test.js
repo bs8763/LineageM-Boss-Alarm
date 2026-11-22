@@ -100,3 +100,16 @@ test('scheduler ignores alarm windows for unscheduled bosses',async()=>{
  await service.tick();
  assert.equal(reads,1);
 });
+
+
+test('Discord pre-spawn alerts require a configured schedule',async()=>{
+ const {queueAlarms}=await import('../src/service.js');
+ const s=initialState(),b=s.bosses.find(x=>x.id==='boss-01');
+ const due=Date.now()+5*60000;
+ b.time=new Date(due).toISOString();b.intervalMinutes=null;b.fixedKstMinutes=[];
+ queueAlarms(s,due-5*60000);
+ assert.equal(s.outbox.length,0);
+ b.intervalMinutes=120;
+ queueAlarms(s,due-5*60000);
+ assert.equal(s.outbox.length,1);
+});
