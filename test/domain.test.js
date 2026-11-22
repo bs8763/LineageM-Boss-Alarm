@@ -85,3 +85,18 @@ test('scheduler ignores malformed and unscheduled legacy rows without triggering
  await service.tick();
  assert.equal(reads,0);
 });
+
+
+test('scheduler ignores alarm windows for unscheduled bosses',async()=>{
+ const {Service}=await import('../src/service.js');
+ const time=new Date(Date.now()+5*60000).toISOString();
+ let reads=0;
+ const store={schedule:async()=>[{id:'boss-01',time,intervalMinutes:null,fixedKstMinutes:[]}]};
+ const service=new Service(store);
+ service.read=async()=>{reads++;};
+ await service.tick();
+ assert.equal(reads,0);
+ store.schedule=async()=>[{id:'boss-01',time,intervalMinutes:120,fixedKstMinutes:[]}];
+ await service.tick();
+ assert.equal(reads,1);
+});
