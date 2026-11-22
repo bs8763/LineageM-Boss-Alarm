@@ -36,3 +36,12 @@ test('Necromancer never queues Discord pre-spawn alerts even with legacy schedul
  assert.equal(s.outbox.length,0);
  assert.equal(s.alarmKeys.length,0);
 });
+
+
+test('production storage refuses silent local fallback without DATABASE_URL',async()=>{
+ const {Store}=await import('../src/store.js');
+ assert.throws(()=>new Store({url:'',requireDatabase:true}),/DATABASE_URL/);
+ const local=new Store({url:'',requireDatabase:false,file:'data/test-storage-only.json'});
+ assert.equal(local.pool,null);
+ await local.close();
+});
