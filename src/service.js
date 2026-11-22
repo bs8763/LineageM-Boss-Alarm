@@ -27,7 +27,7 @@ export class Service {
 
 export function queueAlarms(s,now=Date.now()){
  s.alarmKeys??=[];
- for(const b of s.bosses){if(b.id==='boss-21'||!b.time)continue;const due=Date.parse(b.time);
+ for(const b of s.bosses){if(b.id==='boss-21'||!b.time)continue;const due=Date.parse(b.time);if(!Number.isFinite(due))continue;
   for(const minutes of [10,5,1]){const target=due-minutes*60000;
    // Skip old alerts after a cold start; catch-up must not flood Discord.
    if(now<target||now-target>90000)continue;
