@@ -45,3 +45,17 @@ test('production storage refuses silent local fallback without DATABASE_URL',asy
  assert.equal(local.pool,null);
  await local.close();
 });
+
+test('scheduler tick triggers at five-minute auto-miss boundary and skips notice-only boss',async()=>{
+ const {Service}=await import('../src/service.js');
+ const now=Date.now(),due=new Date(now-GRACE).toISOString();
+ let reads=0;
+ const store={schedule:async()=>[{id:'boss-01',time:due,intervalMinutes:120,fixedKstMinutes:[]},{id:'boss-21',time:due,intervalMinutes:120,fixedKstMinutes:[]} ]};
+ const service=new Service(store);
+ service.read=async()=>{reads++;};
+ await service.tick();
+ assert.equal(reads,1);
+ store.schedule=async()=>[{id:'boss-21',time:due,intervalMinutes:120,fixedKstMinutes:[]}];
+ await service.tick();
+ assert.equal(reads,1);
+});
