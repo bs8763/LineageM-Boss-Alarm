@@ -69,3 +69,19 @@ test('Discord alarm queue ignores malformed legacy scheduled timestamps',async()
  assert.equal(s.outbox.length,0);
  assert.equal(s.alarmKeys.length,0);
 });
+
+
+test('scheduler ignores malformed and unscheduled legacy rows without triggering a write',async()=>{
+ const {Service}=await import('../src/service.js');
+ const past=new Date(Date.now()-20*60000).toISOString();
+ let reads=0;
+ const store={schedule:async()=>[
+  {id:'boss-01',time:'invalid-legacy-time',intervalMinutes:120,fixedKstMinutes:[]},
+  {id:'boss-02',time:past,intervalMinutes:null,fixedKstMinutes:[]},
+  {id:'boss-21',time:past,intervalMinutes:120,fixedKstMinutes:[]}
+ ]};
+ const service=new Service(store);
+ service.read=async()=>{reads++;};
+ await service.tick();
+ assert.equal(reads,0);
+});
