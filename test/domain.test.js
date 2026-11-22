@@ -113,3 +113,15 @@ test('Discord pre-spawn alerts require a configured schedule',async()=>{
  queueAlarms(s,due-5*60000);
  assert.equal(s.outbox.length,1);
 });
+
+
+test('editing a verified boss map does not silently revoke administrator verification',()=>{
+ const s=initialState();
+ configure(s,'서드',{verified:true,mapNumber:'12'},'admin');
+ assert.equal(findVerified(s),true);
+ configure(s,'서드',{mapNumber:'13'},'admin');
+ assert.equal(findVerified(s),true);
+ configure(s,'서드',{verified:false},'admin');
+ assert.equal(findVerified(s),false);
+ function findVerified(state){return state.bosses.find(b=>b.name==='서드').verified;}
+});
