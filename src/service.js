@@ -1,7 +1,7 @@
 import {advance,act,configure,reset,restore,migrateLegacy,undo,serverOpen,serverOpenPlan,DomainError,GRACE} from './domain.js';
 export class Service {
  constructor(store){this.store=store;}
- async tick(){const bosses=await this.store.schedule(),now=Date.now();const due=bosses.some(b=>{if(b.id==='boss-21'||!b.time)return false;const t=Date.parse(b.time);return ((b.intervalMinutes||b.fixedKstMinutes.length)&&now>=t+GRACE)||[10,5,1].some(m=>now>=t-m*60000&&now-(t-m*60000)<=90000);});if(due)await this.read();}
+ async tick(){const bosses=await this.store.schedule(),now=Date.now();const due=(bosses||[]).some(b=>{if(b.id==='boss-21'||!b.time)return false;const t=Date.parse(b.time);if(!Number.isFinite(t))return false;const hasSchedule=Boolean(b.intervalMinutes)||(Array.isArray(b.fixedKstMinutes)&&b.fixedKstMinutes.length>0);return (hasSchedule&&now>=t+GRACE)||[10,5,1].some(m=>now>=t-m*60000&&now-(t-m*60000)<=90000);});if(due)await this.read();}
  async read(){return this.store.transaction(s=>{advance(s);queueAlarms(s);return s;},{reason:'auto-advance'});}
  async action(data){return this.store.transaction(s=>{advance(s);return act(s,data);},{reason:data.action});}
  async messageAction({messageId,...data}){
