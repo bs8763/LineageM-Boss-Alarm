@@ -53,13 +53,11 @@ export async function handleServerOpenUndoCommand(i,service,admins){
  return '서버오픈 기록 #'+result.restoredEvent+' 복구 완료 · 일반 보스 '+result.restoredBosses+'종';
 }
 export async function registerGuildCommands(rest,route,testMode=false){
- const registered=[];
- for(const body of commandDefinitions(testMode)){
-  const result=await rest.post(route,{body});
-  registered.push({name:result.name,id:result.id});
- }
- const actual=await rest.get(route);
- return {registered,actualNames:actual.map(c=>c.name)};
+ // PUT replaces this application's guild command set atomically, removing stale commands.
+ // Do not use POST here: it leaves renamed/removed commands registered indefinitely.
+ const expected=commandDefinitions(testMode);
+ const actual=await rest.put(route,{body:expected});
+ return {registered:actual.map(c=>({name:c.name,id:c.id})),actualNames:actual.map(c=>c.name)};
 }
 export async function startDiscord(service,env=process.env){
  if(!env.DISCORD_BOT_TOKEN)return {ready:()=>false,stop:async()=>{}};
