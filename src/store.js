@@ -42,7 +42,7 @@ export class Store {
   const p=this.tail.then(run);this.tail=p.catch(()=>{});return p;
  }
  async ping(){if(this.pool)await this.pool.query('SELECT 1');return true;}
- async schedule(){if(this.pool){const {rows}=await this.pool.query("SELECT jsonb_agg(jsonb_build_object('time', b->'time', 'intervalMinutes', b->'intervalMinutes', 'fixedKstMinutes', b->'fixedKstMinutes')) AS bosses FROM boss_state, jsonb_array_elements(data->'bosses') b WHERE id=1");return rows[0].bosses;}return structuredClone(this.local.bosses);}
+ async schedule(){if(this.pool){const {rows}=await this.pool.query("SELECT jsonb_agg(jsonb_build_object('id', b->'id', 'time', b->'time', 'intervalMinutes', b->'intervalMinutes', 'fixedKstMinutes', b->'fixedKstMinutes')) AS bosses FROM boss_state, jsonb_array_elements(data->'bosses') b WHERE id=1");return rows[0].bosses;}return structuredClone(this.local.bosses);}
  async backups(){if(this.pool)return (await this.pool.query('SELECT id,created_at,reason FROM boss_backups ORDER BY id DESC LIMIT 200')).rows;const dir=path.join(path.dirname(this.file),'backups');return (await fs.readdir(dir).catch(e=>{if(e.code==='ENOENT')return [];throw e;})).sort().reverse().map(id=>({id}));}
  async backupById(id){if(this.pool){if(!/^\d+$/.test(id))return null;return (await this.pool.query('SELECT data FROM boss_backups WHERE id=$1',[id])).rows[0]?.data;}if(!/^\d+-\d+\.json$/.test(id))return null;try{return JSON.parse(await fs.readFile(path.join(path.dirname(this.file),'backups',id),'utf8'));}catch(e){if(e.code==='ENOENT')return null;throw e;}}
  async close(){await this.tail;await this.pool?.end();}
