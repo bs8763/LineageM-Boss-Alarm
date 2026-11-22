@@ -45,7 +45,7 @@ export function configure(s,id,input,actor,now=Date.now()){
  if(interval!==null&&(!Number.isInteger(interval)||interval<1||interval>10080))throw new DomainError('리젠은 1~10080분');
  if(!Array.isArray(fixed)||fixed.length>24||fixed.some(x=>!Number.isInteger(x)||x<0||x>=1440)||new Set(fixed).size!==fixed.length)throw new DomainError('고정 시간은 중복 없는 0~1439분 목록');
  if(interval&&fixed.length)throw new DomainError('주기 리젠과 고정 시간 중 하나만 설정하세요');
- b.mapNumber=map;b.intervalMinutes=interval;b.fixedKstMinutes=[...fixed].sort((a,b)=>a-b);b.verified=input.verified===true;b.note=b.verified?'혈맹 관리자 확인':'관리자 확인 필요';event(s,b,'configure',actor,now);return b;
+ b.mapNumber=map;b.intervalMinutes=interval;b.fixedKstMinutes=[...fixed].sort((a,b)=>a-b);b.verified=Object.hasOwn(input,'verified')?input.verified===true:b.verified;b.note=b.verified?'혈맹 관리자 확인':'관리자 확인 필요';event(s,b,'configure',actor,now);return b;
 }
 export function reset(s,actor,now=Date.now()){for(const b of s.bosses){b.time=null;b.misses=0;b.lastAction='reset';event(s,b,'reset',actor,now);}return s;}
 // IDs are stable. A spelling correction retains schedules; replacing a different boss
