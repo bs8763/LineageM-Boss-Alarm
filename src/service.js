@@ -37,7 +37,7 @@ export function queueAlarms(s,now=Date.now()){
  }
  // Pending alerts for an earlier spawn must never announce an obsolete time.
  // Preserve sent entries for audit; only supersede unsent alarm messages.
- const currentTimes=new Map(s.bosses.map(b=>[b.id,b.time]));
+ const currentTimes=new Map(s.bosses.map(b=>[b.id,(b.id!=='boss-21'&&(Boolean(b.intervalMinutes)||(Array.isArray(b.fixedKstMinutes)&&b.fixedKstMinutes.length>0))&&Number.isFinite(Date.parse(b.time)))?b.time:null]));
  for(const e of s.outbox){
   if(!e.sentAt&&String(e.id).startsWith('alarm-')&&currentTimes.get(e.bossId)!==e.time)
    e.sentAt='superseded';
