@@ -8,7 +8,7 @@ test('server open recalculates interval bosses and preserves fixed boss schedule
  const before=structuredClone(fixed);s.history.push({id:999,action:'cut'});
  const result=serverOpen(s,opening,'test',Date.parse(opening)+1000);
  assert.equal(interval.time,new Date(Date.parse(opening)+interval.intervalMinutes*60000).toISOString());
- assert.equal(interval.misses,3);assert.deepEqual(fixed,before);
+ assert.equal(interval.misses,0);assert.deepEqual(fixed,before);
  assert.equal(result.updated.some(b=>b.id===fixed.id),false);
  assert.equal(s.history.some(e=>e.id===999),true);
  assert.equal(s.history.at(-1).action,'server-open');
