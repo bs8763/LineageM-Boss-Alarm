@@ -109,7 +109,7 @@ export function serverOpen(s,openTime,actor,now=Date.now()){
  }
  s.alarmKeys=(s.alarmKeys||[]).filter(k=>![...affected].some(id=>k.startsWith('alarm-'+id+'-')));
  for(const change of plan.updated){
-  const b=findBoss(s,change.id);b.time=change.time;b.lastAction='server-open';b.version++;
+  const b=findBoss(s,change.id);b.time=change.time;b.misses=0;b.lastAction='server-open';b.version++;
  }
  s.revision++;
  const eventId=s.revision;
