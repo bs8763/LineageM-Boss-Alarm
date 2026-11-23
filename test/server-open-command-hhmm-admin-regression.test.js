@@ -37,7 +37,7 @@ test('server opening authorized admin sends one parsed timestamp to service', as
   let calls = 0;
   const service = { serverOpen: async (time, actor) => {
     calls++;
-    assert.match(time, /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.000Z$/);
+    assert.match(time, /^\d{4}-\d{2}-\d{2}T07:00:00\.000Z$/);
     assert.equal(actor, 'discord:admin');
     return { duplicate: false, updated: [{ id: 'boss-1' }], eventId: 123 };
   } };
