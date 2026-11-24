@@ -18,7 +18,7 @@ export function createApp(service,env=process.env){
  app.get('/api/bosses',auth(),wrap(async(_,res)=>res.json((await service.read()).bosses.sort((a,b)=>(a.time||'z').localeCompare(b.time||'z')))));
  app.get('/api/history',auth(),wrap(async(_,res)=>res.json((await service.read()).history.slice(-200).reverse())));
  app.post('/api/bosses',auth(),wrap(async(req,res)=>res.json(await service.action({id:req.body.id||req.body.name,action:'schedule',time:req.body.time,expectedVersion:req.body.expectedVersion,actor:req.actor}))));
- app.post('/api/bosses/:id/action',auth(),wrap(async(req,res)=>{if(!['cut','miss','schedule'].includes(req.body.action))return res.status(400).json({error:'컷·멍·예약만 허용됩니다'});res.json(await service.action({...req.body,id:req.params.id,actor:req.actor}));}));
+ app.post('/api/bosses/:id/action',auth(),wrap(async(req,res)=>{if(!['cut','miss','schedule'].includes(req.body.action))return res.status(400).json({error:'컷·멍·예약만 허용됩니다'});res.json(await service.action({id:req.params.id,action:req.body.action,time:req.body.time,expectedVersion:req.body.expectedVersion,actor:req.actor}));}));
  app.delete('/api/bosses/:name',auth(true),wrap(async(req,res)=>res.json(await service.action({id:req.params.name,action:'clear',actor:req.actor}))));
  app.patch('/api/bosses/:id',auth(true),wrap(async(req,res)=>res.json(await service.configure(req.params.id,req.body,req.actor))));
  app.post('/api/admin/reset',auth(true),wrap(async(req,res)=>{if(req.body.confirm!=='RESET')return res.status(400).json({error:'confirm=RESET 확인 필요'});await service.reset(req.actor);res.json({ok:true});}));
