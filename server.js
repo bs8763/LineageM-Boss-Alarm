@@ -13,7 +13,8 @@ export function createApp(service,env=process.env){
  app.get('/healthz',(_,res)=>res.json({ok:true}));
  app.get('/readyz',async(_,res)=>{try{await service.store.ping();res.json({ok:true,persistent:Boolean(service.store.pool)});}catch{res.status(503).json({ok:false});}});
  const auth=(admin=false)=>(req,res,next)=>{const raw=req.headers.authorization?.replace(/^Bearer /,'');const isAdmin=match(raw,env.ADMIN_TOKEN);if(!isAdmin&&(admin||!match(raw,env.CLAN_TOKEN)))return res.status(401).json({error:admin?'관리자 키가 필요합니다':'혈맹 접속 키가 필요합니다'});req.actor=isAdmin?'web:admin':'web:clan';next();};
- const wrap=fn=>(req,res,next)=>Promise.resolve(fn(req,res)).catch(next);
+ const wrap=fn=>(req,res,next)=>Promise.resolve().then(()=>fn(req,res)).catch(next);
+ app.use('/api',(req,res,next)=>{if(['POST','PATCH'].includes(req.method)&&(!req.body||typeof req.body!=='object'||Array.isArray(req.body)))return res.status(400).json({error:'JSON 객체 요청이 필요합니다'});next();});
  app.get('/api/session',auth(),(req,res)=>res.json({admin:req.actor==='web:admin',persistent:Boolean(service.store.pool)}));
  app.get('/api/bosses',auth(),wrap(async(_,res)=>res.json((await service.read()).bosses.sort((a,b)=>(a.time||'z').localeCompare(b.time||'z')))));
  app.get('/api/history',auth(),wrap(async(_,res)=>res.json((await service.read()).history.slice(-200).reverse())));
