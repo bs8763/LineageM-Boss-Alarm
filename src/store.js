@@ -25,7 +25,7 @@ export class Store {
  transaction(fn,{backup=false,reason='change'}={}){
   const run=async()=>{
    if(this.pool){const c=await this.pool.connect();try{
-    await c.query('BEGIN');const {rows}=await c.query('SELECT data FROM boss_state WHERE id=1 FOR UPDATE');const before=rows[0].data;const state=structuredClone(before);const result=await fn(state);
+    await c.query('BEGIN');const {rows}=await c.query('SELECT data FROM boss_state WHERE id=1 FOR UPDATE');if(rows.length!==1)throw Error('Persistent boss state is missing');const before=rows[0].data;const state=structuredClone(before);const result=await fn(state);
     if(JSON.stringify(state)!==JSON.stringify(before)){
      // Every changed revision gets a pre-change backup in the same commit.
      if(backup||state.revision!==before.revision){await c.query('INSERT INTO boss_backups(reason,data) VALUES($1,$2)',[reason,JSON.stringify(before)]);await c.query('DELETE FROM boss_backups WHERE id NOT IN (SELECT id FROM boss_backups ORDER BY id DESC LIMIT 200)');}
