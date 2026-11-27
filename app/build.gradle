@@ -41,8 +41,8 @@ android {
         applicationId 'com.bs8763.bossalarm'
         minSdk 26
         targetSdk 35
-        versionCode 5
-        versionName '3.0.1-native'
+        versionCode 6
+        versionName '3.0.2-native'
         buildConfigField 'String', 'APP_URL', '"' + configuredUrl + '"'
     }
     buildFeatures { buildConfig true }
