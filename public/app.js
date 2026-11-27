@@ -37,6 +37,12 @@ $('token').addEventListener('keydown',event=>{if(event.key==='Enter'){event.prev
 $('backup').onclick=()=>perform(async()=>{const response=await api('/api/admin/backup');const blob=await response.blob();if(window.BossBackup){window.BossBackup.save(await blob.text());return false;}const url=URL.createObjectURL(blob),a=node('a');a.href=url;a.download=`boss-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);return false;});
 $('restore').onclick=()=>perform(async()=>{const f=$('restoreFile').files[0];if(!f)throw Error('백업 파일을 선택하세요');if(f.size>1500000)throw Error('백업은 1.5MB 이하');const snapshot=JSON.parse(await f.text());if(!confirm('전체 데이터를 이 백업으로 복원할까요?'))return false;await post('/api/admin/restore',{snapshot,confirm:'RESTORE'});});
 $('backups').onclick=()=>perform(async()=>{const items=await json('/api/admin/backups');$('backupList').replaceChildren();for(const x of items){const row=node('div',`${x.created_at?date(x.created_at):x.id} · ${x.reason||'자동 백업'}`,'record');row.append(button('복원',async()=>{if(!confirm('선택한 자동 백업으로 복원할까요?'))return false;await post('/api/admin/restore',{backupId:x.id,confirm:'RESTORE'});},'secondary'));$('backupList').append(row);}return false;});
+// Administrator-only server opening, using the same HHMM API as Discord.
+const serverOpenTime=node('input');serverOpenTime.id='serverOpenTime';serverOpenTime.type='text';serverOpenTime.inputMode='numeric';serverOpenTime.maxLength=4;serverOpenTime.placeholder='1600';
+const serverOpenLabel=node('label','서버오픈 시간 (HHMM, 한국시간)');serverOpenLabel.htmlFor=serverOpenTime.id;serverOpenLabel.append(serverOpenTime);
+const serverOpenButton=button('서버오픈 적용',async()=>{if(!isAdmin)throw Error('관리자 권한이 필요합니다');const time=serverOpenTime.value.trim();if(!/^(?:[01][0-9]|2[0-3])[0-5][0-9]$/.test(time))throw Error('시간을 HHMM 형식으로 입력하세요 (예: 1600)');if(!confirm('오늘 '+time.slice(0,2)+':'+time.slice(2)+' 기준으로 일반 보스 시간을 재계산할까요?'))return false;await post('/api/admin/server-open',{time});serverOpenTime.value='';},'secondary');
+$('admin').prepend(serverOpenLabel,serverOpenButton);
+$('logout').addEventListener('click',()=>{serverOpenTime.value='';});
 $('reset').onclick=()=>perform(async()=>{if(prompt('전체 시간·멍을 초기화하려면 RESET 입력')!=='RESET')return false;await post('/api/admin/reset',{confirm:'RESET'});});
 setInterval(tick,1000);
 // Do not discard a clan member's in-progress reservation or admin edits during refresh.
