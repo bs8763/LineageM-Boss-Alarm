@@ -5,7 +5,7 @@ const T=Date.parse('2026-10-28T00:00:00Z');
 function scheduled(){const s=initialState();act(s,{id:'boss-01',action:'schedule',time:new Date(T).toISOString()},T);return s;}
 test('31 unique bosses; ambiguous data does not receive an invented interval',()=>{const s=initialState();assert.equal(s.bosses.length,31);assert.equal(new Set(s.bosses.map(b=>b.id)).size,31);assert.equal(s.bosses.find(b=>b.name==='네크로맨서').intervalMinutes,null);assert.throws(()=>act(s,{id:'네크로맨서',action:'cut'},T));});
 test('cut uses actual kill time and clears misses; miss uses scheduled spawn',()=>{const s=scheduled();act(s,{id:'서드',action:'miss'},T);assert.equal(s.bosses[0].time,new Date(T+120*60000).toISOString());assert.equal(s.bosses[0].misses,1);act(s,{id:'서드',action:'cut',time:new Date(T+10*60000).toISOString()},T+10*60000);assert.equal(s.bosses[0].time,new Date(T+130*60000).toISOString());assert.equal(s.bosses[0].misses,0);});
-test('30-minute boundary, multiple sleep periods, idempotent catch-up',()=>{const s=scheduled();advance(s,T+GRACE-1);assert.equal(s.bosses[0].misses,0);advance(s,T+GRACE);assert.equal(s.bosses[0].misses,1);advance(s,T+GRACE+6*3600000);assert.equal(s.bosses[0].misses,4);const copy=structuredClone(s);advance(s,T+GRACE+6*3600000);assert.deepEqual(s,copy);});
+test('5-minute boundary, multiple sleep periods, idempotent catch-up',()=>{const s=scheduled();advance(s,T+GRACE-1);assert.equal(s.bosses[0].misses,0);advance(s,T+GRACE);assert.equal(s.bosses[0].misses,1);advance(s,T+GRACE+6*3600000);assert.equal(s.bosses[0].misses,4);const copy=structuredClone(s);advance(s,T+GRACE+6*3600000);assert.deepEqual(s,copy);});
 test('fixed KST schedule crosses midnight and catches up a year without drift',()=>{const s=initialState();const t=Date.parse('2026-10-28T20:00:00+09:00');act(s,{id:'바포메트',action:'schedule',time:new Date(t).toISOString()},t);advance(s,t+365*86400000+GRACE);const b=s.bosses.find(b=>b.name==='바포메트');assert.equal(b.misses,731);assert.equal(new Date(Date.parse(b.time)+9*3600000).toISOString().slice(11,16),'14:00');});
 test('stale write rejected; future cuts rejected',()=>{const s=scheduled();assert.throws(()=>act(s,{id:'서드',action:'miss',expectedVersion:0},T),e=>e.status===409);assert.throws(()=>act(s,{id:'서드',action:'cut',time:new Date(T+3600000).toISOString()},T));});
 test('administrator config validates schedules and duplicates',()=>{const s=initialState();assert.throws(()=>configure(s,'서드',{intervalMinutes:0},'admin'));assert.throws(()=>configure(s,'서드',{intervalMinutes:null,fixedKstMinutes:[10,10]},'admin'));configure(s,'서드',{intervalMinutes:null,fixedKstMinutes:[840,1200],mapNumber:'54',verified:true},'admin');assert.equal(s.bosses[0].verified,true);});
@@ -14,4 +14,128 @@ test('legacy data migrates known names and refuses to silently discard unknown n
 test('10/5-minute alarms are durable, deduplicated and skip missed cold-start windows',async()=>{const {queueAlarms}=await import('../src/service.js');const s=scheduled();s.outbox=[];queueAlarms(s,T-10*60000);assert.equal(s.outbox.length,1);queueAlarms(s,T-10*60000+1000);assert.equal(s.outbox.length,1);queueAlarms(s,T-5*60000);assert.equal(s.outbox.length,2);queueAlarms(s,T+120000);assert.equal(s.outbox.length,2);queueAlarms(s,T);assert.equal(s.outbox.length,3);});
 test('API rejects rollover dates and config patches preserve an unknown interval',()=>{const s=initialState();assert.throws(()=>act(s,{id:'서드',action:'schedule',time:'2026-02-30T00:00:00Z'}));configure(s,'네크로맨서',{mapNumber:'미확정'},'admin');assert.equal(s.bosses.find(b=>b.name==='네크로맨서').intervalMinutes,null);});
 
-test('clan boss reference includes 카스트 and 네크로맨서, not 가스트 or 베리스',()=>{const bosses=initialState().bosses;assert.equal(bosses.length,31);assert.equal(bosses.find(b=>b.name==='카스트')?.mapNumber,'46');assert.equal(bosses.find(b=>b.name==='네크로맨서')?.mapNumber,'18');assert.equal(bosses.find(b=>b.name==='네크로맨서')?.intervalMinutes,null);assert.ok(!bosses.some(b=>['가스트','베리스'].includes(b.name)));});
+test('clan boss reference includes 가스트 and 네크로맨서, not 카스트 or 베리스',()=>{const bosses=initialState().bosses;assert.equal(bosses.length,31);assert.equal(bosses.find(b=>b.name==='가스트')?.mapNumber,'46');assert.equal(bosses.find(b=>b.name==='네크로맨서')?.mapNumber,'18');assert.equal(bosses.find(b=>b.name==='네크로맨서')?.intervalMinutes,null);assert.ok(!bosses.some(b=>['카스트','베리스'].includes(b.name)));});
+
+
+test('Necromancer is odd-hour notice only and never records cut, miss or scheduled time',()=>{
+ const s=initialState();const b=s.bosses.find(x=>x.name==='네크로맨서');
+ assert.equal(b.oddHourNoticeOnly,true);
+ for(const action of ['cut','miss','schedule'])assert.throws(()=>act(s,{id:b.id,action,time:new Date(T).toISOString()},T),/홀수 시간 안내 전용/);
+ b.time=new Date(T).toISOString();advance(s,T+GRACE+60000);
+ assert.equal(b.misses,0);assert.equal(b.time,new Date(T).toISOString());
+});
+
+test('Necromancer notice-only invariant blocks configured automatic misses and server-open',()=>{const s=initialState();const b=s.bosses.find(x=>x.id==='boss-21');assert.throws(()=>configure(s,b.id,{intervalMinutes:120},'admin'));assert.throws(()=>configure(s,b.id,{fixedKstMinutes:[60]},'admin'));b.intervalMinutes=120;b.time=new Date(T).toISOString();advance(s,T+GRACE+1);assert.equal(b.misses,0);assert.equal(b.lastAction,null);});
+
+
+test('Necromancer never queues Discord pre-spawn alerts even with legacy scheduled data',async()=>{
+ const {queueAlarms}=await import('../src/service.js');
+ const s=initialState(),b=s.bosses.find(x=>x.id==='boss-21');
+ b.time=new Date(T).toISOString();b.intervalMinutes=120;
+ queueAlarms(s,T-10*60000);
+ assert.equal(s.outbox.length,0);
+ assert.equal(s.alarmKeys.length,0);
+});
+
+
+test('production storage refuses silent local fallback without DATABASE_URL',async()=>{
+ const {Store}=await import('../src/store.js');
+ assert.throws(()=>new Store({url:'',requireDatabase:true}),/DATABASE_URL/);
+ const local=new Store({url:'',requireDatabase:false,file:'data/test-storage-only.json'});
+ assert.equal(local.pool,null);
+ await local.close();
+});
+
+test('scheduler tick triggers at five-minute auto-miss boundary and skips notice-only boss',async()=>{
+ const {Service}=await import('../src/service.js');
+ const now=Date.now(),due=new Date(now-GRACE).toISOString();
+ let reads=0;
+ const store={schedule:async()=>[{id:'boss-01',time:due,intervalMinutes:120,fixedKstMinutes:[]},{id:'boss-21',time:due,intervalMinutes:120,fixedKstMinutes:[]} ]};
+ const service=new Service(store);
+ service.read=async()=>{reads++;};
+ await service.tick();
+ assert.equal(reads,1);
+ store.schedule=async()=>[{id:'boss-21',time:due,intervalMinutes:120,fixedKstMinutes:[]}];
+ await service.tick();
+ assert.equal(reads,1);
+});
+
+
+test('Discord alarm queue ignores malformed legacy scheduled timestamps',async()=>{
+ const {queueAlarms}=await import('../src/service.js');
+ const s=initialState(),boss=s.bosses.find(b=>b.id==='boss-01');
+ boss.time='invalid-legacy-time';
+ queueAlarms(s,T);
+ assert.equal(s.outbox.length,0);
+ assert.equal(s.alarmKeys.length,0);
+});
+
+
+test('scheduler ignores malformed and unscheduled legacy rows without triggering a write',async()=>{
+ const {Service}=await import('../src/service.js');
+ const past=new Date(Date.now()-20*60000).toISOString();
+ let reads=0;
+ const store={schedule:async()=>[
+  {id:'boss-01',time:'invalid-legacy-time',intervalMinutes:120,fixedKstMinutes:[]},
+  {id:'boss-02',time:past,intervalMinutes:null,fixedKstMinutes:[]},
+  {id:'boss-21',time:past,intervalMinutes:120,fixedKstMinutes:[]}
+ ]};
+ const service=new Service(store);
+ service.read=async()=>{reads++;};
+ await service.tick();
+ assert.equal(reads,0);
+});
+
+
+test('scheduler ignores alarm windows for unscheduled bosses',async()=>{
+ const {Service}=await import('../src/service.js');
+ const time=new Date(Date.now()+5*60000).toISOString();
+ let reads=0;
+ const store={schedule:async()=>[{id:'boss-01',time,intervalMinutes:null,fixedKstMinutes:[]}]};
+ const service=new Service(store);
+ service.read=async()=>{reads++;};
+ await service.tick();
+ assert.equal(reads,0);
+ store.schedule=async()=>[{id:'boss-01',time,intervalMinutes:120,fixedKstMinutes:[]}];
+ await service.tick();
+ assert.equal(reads,1);
+});
+
+
+test('Discord pre-spawn alerts require a configured schedule',async()=>{
+ const {queueAlarms}=await import('../src/service.js');
+ const s=initialState(),b=s.bosses.find(x=>x.id==='boss-01');
+ const due=Date.now()+5*60000;
+ b.time=new Date(due).toISOString();b.intervalMinutes=null;b.fixedKstMinutes=[];
+ queueAlarms(s,due-5*60000);
+ assert.equal(s.outbox.length,0);
+ b.intervalMinutes=120;
+ queueAlarms(s,due-5*60000);
+ assert.equal(s.outbox.length,1);
+});
+
+
+test('editing a verified boss map does not silently revoke administrator verification',()=>{
+ const s=initialState();
+ configure(s,'서드',{verified:true,mapNumber:'12'},'admin');
+ assert.equal(findVerified(s),true);
+ configure(s,'서드',{mapNumber:'13'},'admin');
+ assert.equal(findVerified(s),true);
+ configure(s,'서드',{verified:false},'admin');
+ assert.equal(findVerified(s),false);
+ function findVerified(state){return state.bosses.find(b=>b.name==='서드').verified;}
+});
+
+
+test('pending Discord spawn alarm is superseded when a boss schedule is removed',async()=>{
+ const {queueAlarms}=await import('../src/service.js');
+ const s=initialState(),b=s.bosses.find(x=>x.id==='boss-01');
+ const due=T+10*60000;
+ b.time=new Date(due).toISOString();b.intervalMinutes=120;
+ queueAlarms(s,T);
+ assert.equal(s.outbox.length,1);
+ assert.equal(s.outbox[0].sentAt,undefined);
+ b.intervalMinutes=null;b.fixedKstMinutes=[];
+ queueAlarms(s,T+1000);
+ assert.equal(s.outbox[0].sentAt,'superseded');
+});

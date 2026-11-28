@@ -1,7 +1,7 @@
-import {advance,act,configure,reset,restore,migrateLegacy,undo,DomainError} from './domain.js';
+import {advance,act,configure,reset,restore,migrateLegacy,undo,serverOpen,serverOpenPlan,DomainError,GRACE} from './domain.js';
 export class Service {
  constructor(store){this.store=store;}
- async tick(){const bosses=await this.store.schedule(),now=Date.now();const due=bosses.some(b=>{if(!b.time)return false;const t=Date.parse(b.time);return ((b.intervalMinutes||b.fixedKstMinutes.length)&&now>=t+30*60000)||[10,5,1].some(m=>now>=t-m*60000&&now-(t-m*60000)<=90000);});if(due)await this.read();}
+ async tick(){const bosses=await this.store.schedule(),now=Date.now();const due=(bosses||[]).some(b=>{if(b.id==='boss-21'||!b.time)return false;const t=Date.parse(b.time);if(!Number.isFinite(t))return false;const hasSchedule=Boolean(b.intervalMinutes)||(Array.isArray(b.fixedKstMinutes)&&b.fixedKstMinutes.length>0);return hasSchedule&&(now>=t+GRACE||[10,5,1].some(m=>now>=t-m*60000&&now-(t-m*60000)<=90000));});if(due)await this.read();}
  async read(){return this.store.transaction(s=>{advance(s);queueAlarms(s);return s;},{reason:'auto-advance'});}
  async action(data){return this.store.transaction(s=>{advance(s);return act(s,data);},{reason:data.action});}
  async messageAction({messageId,...data}){
@@ -20,18 +20,27 @@ export class Service {
  async reset(actor){return this.store.transaction(s=>reset(s,actor),{backup:true,reason:'reset'});}
  async restore(raw,actor){return this.store.transaction(s=>restore(s,raw,actor),{backup:true,reason:'restore'});}
  async importLegacy(rows,actor){return this.store.transaction(s=>{if(s.history.length||s.bosses.some(b=>b.time))throw new DomainError('이미 데이터가 있습니다. 먼저 백업 후 복구 기능을 사용하세요',409);return restore(s,migrateLegacy(rows),actor);},{backup:true,reason:'legacy-import'});}
+ async previewServerOpen(time){return this.store.transaction(s=>serverOpenPlan(s,time));}
+ async serverOpen(time,actor){return this.store.transaction(s=>serverOpen(s,time,actor),{backup:true,reason:'server-open'});}
  async undo(id,actor){return this.store.transaction(s=>{advance(s);return undo(s,id,actor);},{backup:true,reason:'undo'});}
 }
 
 export function queueAlarms(s,now=Date.now()){
  s.alarmKeys??=[];
- for(const b of s.bosses){if(!b.time)continue;const due=Date.parse(b.time);
+ for(const b of s.bosses){if(b.id==='boss-21'||!b.time)continue;const hasSchedule=Boolean(b.intervalMinutes)||(Array.isArray(b.fixedKstMinutes)&&b.fixedKstMinutes.length>0);if(!hasSchedule)continue;const due=Date.parse(b.time);if(!Number.isFinite(due))continue;
   for(const minutes of [10,5,1]){const target=due-minutes*60000;
    // Skip old alerts after a cold start; catch-up must not flood Discord.
    if(now<target||now-target>90000)continue;
    const id=`alarm-${b.id}-${b.time}-${minutes}`;if(s.alarmKeys.includes(id))continue;
    s.alarmKeys.push(id);s.outbox.push({id,bossId:b.id,name:b.name,action:minutes?`${minutes}분 전`:'출현 예정',at:new Date(now).toISOString(),time:b.time,attempts:0});
   }
+ }
+ // Pending alerts for an earlier spawn must never announce an obsolete time.
+ // Preserve sent entries for audit; only supersede unsent alarm messages.
+ const currentTimes=new Map(s.bosses.map(b=>[b.id,(b.id!=='boss-21'&&(Boolean(b.intervalMinutes)||(Array.isArray(b.fixedKstMinutes)&&b.fixedKstMinutes.length>0))&&Number.isFinite(Date.parse(b.time)))?b.time:null]));
+ for(const e of s.outbox){
+  if(!e.sentAt&&String(e.id).startsWith('alarm-')&&currentTimes.get(e.bossId)!==e.time)
+   e.sentAt='superseded';
  }
  s.alarmKeys=s.alarmKeys.slice(-1000);s.outbox=s.outbox.slice(-1000);
 }

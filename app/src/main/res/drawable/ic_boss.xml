@@ -1,6 +1,17 @@
-<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="48dp" android:height="48dp" android:viewportWidth="48" android:viewportHeight="48">
- <path android:fillColor="#182740" android:pathData="M0,0h48v48h-48z"/>
- <path android:fillColor="#8193FF" android:pathData="M24,5L40,11L38,29L24,43L10,29L8,11Z"/>
- <path android:fillColor="#182740" android:pathData="M24,10L35,14L33,27L24,36L15,27L13,14Z"/>
- <path android:fillColor="#FFFFFF" android:pathData="M22,14h4v15h-4zM17,24h14v4h-14zM22,28h4v6h-4z"/>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp" android:height="48dp"
+    android:viewportWidth="512" android:viewportHeight="512">
+    <!-- Match the web/OneStore shield-and-star artwork, not the old cross glyph. -->
+    <path android:fillColor="#120C12" android:pathData="M0,0h512v512h-512z"/>
+    <path android:fillColor="#42191C" android:strokeColor="#E6BD78"
+        android:strokeWidth="17"
+        android:pathData="M256,54 L428,124 V260 C428,368 356,434 256,467 C156,434 84,368 84,260 V124 Z"/>
+    <path android:fillColor="#130F14" android:strokeColor="#8E352E"
+        android:strokeWidth="9"
+        android:pathData="M256,95 L390,151 V258 C390,340 339,395 256,426 C173,395 122,340 122,258 V151 Z"/>
+    <path android:fillColor="#E6BD78" android:strokeColor="#FFDF9C"
+        android:strokeWidth="5"
+        android:pathData="M256,131 L286,215 375,219 303,272 330,359 256,308 182,359 209,272 137,219 226,215 Z"/>
+    <path android:strokeColor="#9C352D" android:strokeWidth="12"
+        android:strokeLineCap="round" android:pathData="M149,389 L363,389"/>
 </vector>

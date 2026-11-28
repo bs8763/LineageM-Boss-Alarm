@@ -1,0 +1,34 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { initialState, serverOpen, undo } from '../src/domain.js';
+
+test('server open resets regular boss misses and undo restores them without changing fixed bosses', () => {
+  const state = initialState();
+  const regular = state.bosses.find(b => b.id !== 'boss-21' && b.intervalMinutes && !b.fixedKstMinutes.length);
+  const fixed = state.bosses.find(b => b.fixedKstMinutes.length);
+  assert.ok(regular, 'regular boss must exist');
+  assert.ok(fixed, 'fixed boss must exist');
+  const oldTime = '2026-11-23T08:00:00.000Z';
+  regular.time = oldTime;
+  regular.misses = 3;
+  regular.lastAction = 'auto-miss';
+  fixed.time = oldTime;
+  fixed.misses = 2;
+  const now = Date.parse('2026-11-23T12:00:00.000Z');
+  const open = '2026-11-23T11:00:00.000Z';
+  const result = serverOpen(state, open, 'admin', now);
+  assert.equal(result.duplicate, false);
+  assert.equal(regular.misses, 0);
+  assert.equal(regular.lastAction, 'server-open');
+  assert.equal(regular.time, new Date(Date.parse(open) + regular.intervalMinutes * 60000).toISOString());
+  assert.equal(fixed.time, oldTime);
+  assert.equal(fixed.misses, 2);
+  const repeated = serverOpen(state, open, 'admin', now);
+  assert.equal(repeated.duplicate, true);
+  assert.equal(repeated.eventId, result.eventId);
+  undo(state, result.eventId, 'admin', now + 1000);
+  assert.equal(regular.time, oldTime);
+  assert.equal(regular.misses, 3);
+  assert.equal(regular.lastAction, 'auto-miss');
+  assert.equal(fixed.misses, 2);
+});

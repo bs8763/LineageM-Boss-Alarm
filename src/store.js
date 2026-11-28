@@ -3,8 +3,8 @@ import path from 'node:path';
 import pg from 'pg';
 import {initialState,migrateLegacy,validateSnapshot,upgradeCatalog} from './domain.js';
 export class Store {
- constructor({url=process.env.DATABASE_URL,file=process.env.DATA_FILE||'data/state.json',requireDatabase=process.env.RENDER==='true'}={}){
-  if(requireDatabase&&!url)throw Error('Render에서는 DATABASE_URL 영구 저장소가 필수입니다. 로컬 파일로 실행하지 않습니다.');
+ constructor({url=process.env.DATABASE_URL,file=process.env.DATA_FILE||'data/state.json',requireDatabase=process.env.NODE_ENV==='production'||process.env.RENDER==='true'}={}){
+  if(requireDatabase&&!url)throw Error('운영 환경에서는 DATABASE_URL 영구 저장소가 필수입니다. 로컬 파일로 실행하지 않습니다.');
   this.file=file;this.tail=Promise.resolve();this.pool=url?new pg.Pool({connectionString:url,max:3,connectionTimeoutMillis:10000,idleTimeoutMillis:30000}):null;
   this.pool?.on('error',()=>console.error('Database idle connection failed; retry on next operation'));
  }
@@ -25,7 +25,7 @@ export class Store {
  transaction(fn,{backup=false,reason='change'}={}){
   const run=async()=>{
    if(this.pool){const c=await this.pool.connect();try{
-    await c.query('BEGIN');const {rows}=await c.query('SELECT data FROM boss_state WHERE id=1 FOR UPDATE');const before=rows[0].data;const state=structuredClone(before);const result=await fn(state);
+    await c.query('BEGIN');const {rows}=await c.query('SELECT data FROM boss_state WHERE id=1 FOR UPDATE');if(rows.length!==1)throw Error('Persistent boss state is missing');const before=rows[0].data;const state=structuredClone(before);const result=await fn(state);
     if(JSON.stringify(state)!==JSON.stringify(before)){
      // Every changed revision gets a pre-change backup in the same commit.
      if(backup||state.revision!==before.revision){await c.query('INSERT INTO boss_backups(reason,data) VALUES($1,$2)',[reason,JSON.stringify(before)]);await c.query('DELETE FROM boss_backups WHERE id NOT IN (SELECT id FROM boss_backups ORDER BY id DESC LIMIT 200)');}
@@ -41,8 +41,8 @@ export class Store {
   };
   const p=this.tail.then(run);this.tail=p.catch(()=>{});return p;
  }
- async ping(){if(this.pool)await this.pool.query('SELECT 1');return true;}
- async schedule(){if(this.pool){const {rows}=await this.pool.query("SELECT jsonb_agg(jsonb_build_object('time', b->'time', 'intervalMinutes', b->'intervalMinutes', 'fixedKstMinutes', b->'fixedKstMinutes')) AS bosses FROM boss_state, jsonb_array_elements(data->'bosses') b WHERE id=1");return rows[0].bosses;}return structuredClone(this.local.bosses);}
+ async ping(){if(this.pool){const {rows}=await this.pool.query('SELECT id FROM boss_state WHERE id=1');if(rows.length!==1)throw Error('Persistent boss state is missing');}return true;}
+ async schedule(){if(this.pool){const {rows}=await this.pool.query("SELECT jsonb_agg(jsonb_build_object('id', b->'id', 'time', b->'time', 'intervalMinutes', b->'intervalMinutes', 'fixedKstMinutes', b->'fixedKstMinutes')) AS bosses FROM boss_state, jsonb_array_elements(data->'bosses') b WHERE id=1");const bosses=rows[0]?.bosses;if(!Array.isArray(bosses)||bosses.length===0)throw Error('Persistent boss schedule is missing');return bosses;}return structuredClone(this.local.bosses);}
  async backups(){if(this.pool)return (await this.pool.query('SELECT id,created_at,reason FROM boss_backups ORDER BY id DESC LIMIT 200')).rows;const dir=path.join(path.dirname(this.file),'backups');return (await fs.readdir(dir).catch(e=>{if(e.code==='ENOENT')return [];throw e;})).sort().reverse().map(id=>({id}));}
  async backupById(id){if(this.pool){if(!/^\d+$/.test(id))return null;return (await this.pool.query('SELECT data FROM boss_backups WHERE id=$1',[id])).rows[0]?.data;}if(!/^\d+-\d+\.json$/.test(id))return null;try{return JSON.parse(await fs.readFile(path.join(path.dirname(this.file),'backups',id),'utf8'));}catch(e){if(e.code==='ENOENT')return null;throw e;}}
  async close(){await this.tail;await this.pool?.end();}

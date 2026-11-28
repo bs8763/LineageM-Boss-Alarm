@@ -3,7 +3,7 @@ import {timingSafeEqual} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {Store} from './src/store.js';
 import {Service} from './src/service.js';
-import {startDiscord} from './src/discord.js';
+import {startDiscord,parseServerOpenKst} from './src/discord.js';
 function match(a,b){if(typeof a!=='string'||!b)return false;const x=Buffer.from(a),y=Buffer.from(b);return x.length===y.length&&timingSafeEqual(x,y);}
 export function createApp(service,env=process.env){
  const app=express();app.disable('x-powered-by');if(env.RENDER==='true')app.set('trust proxy',1);
@@ -11,16 +11,18 @@ export function createApp(service,env=process.env){
  app.use((req,res,next)=>{res.set({'X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"});next();});
  app.use('/api',limiter,express.json({limit:'2mb'}),(req,res,next)=>{res.set('Cache-Control','no-store');next();});
  app.get('/healthz',(_,res)=>res.json({ok:true}));
- app.get('/readyz',async(_,res)=>{try{await service.store.ping();res.json({ok:true,persistent:Boolean(service.store.pool)});}catch{res.status(503).json({ok:false});}});
- const auth=(admin=false)=>(req,res,next)=>{const raw=req.headers.authorization?.replace(/^Bearer /,'');const isAdmin=match(raw,env.ADMIN_TOKEN);if(!isAdmin&&(admin||!match(raw,env.CLAN_TOKEN)))return res.status(401).json({error:admin?'관리자 키가 필요합니다':'혈맹 접속 키가 필요합니다'});req.actor=isAdmin?'web:admin':'web:clan';next();};
- const wrap=fn=>(req,res,next)=>Promise.resolve(fn(req,res)).catch(next);
+ app.get('/readyz',async(_,res)=>{res.set('Cache-Control','no-store');try{await service.store.ping();if(!service.store.pool&&env.NODE_ENV==='production')return res.status(503).json({ok:false,persistent:false});res.json({ok:true,persistent:Boolean(service.store.pool)});}catch{res.status(503).json({ok:false});}});
+ const auth=(admin=false)=>(req,res,next)=>{const header=req.headers.authorization;const raw=typeof header==='string'&&/^Bearer /i.test(header)?header.slice(7):undefined;const isAdmin=Boolean(env.ADMIN_TOKEN&&env.ADMIN_TOKEN!==env.CLAN_TOKEN)&&match(raw,env.ADMIN_TOKEN);if(!isAdmin&&(admin||!match(raw,env.CLAN_TOKEN)))return res.status(401).json({error:admin?'관리자 키가 필요합니다':'혈맹 접속 키가 필요합니다'});req.actor=isAdmin?'web:admin':'web:clan';next();};
+ const wrap=fn=>(req,res,next)=>Promise.resolve().then(()=>fn(req,res)).catch(next);
+ app.use('/api',(req,res,next)=>{if(['POST','PATCH'].includes(req.method)&&(!req.body||typeof req.body!=='object'||Array.isArray(req.body)))return res.status(400).json({error:'JSON 객체 요청이 필요합니다'});next();});
  app.get('/api/session',auth(),(req,res)=>res.json({admin:req.actor==='web:admin',persistent:Boolean(service.store.pool)}));
  app.get('/api/bosses',auth(),wrap(async(_,res)=>res.json((await service.read()).bosses.sort((a,b)=>(a.time||'z').localeCompare(b.time||'z')))));
  app.get('/api/history',auth(),wrap(async(_,res)=>res.json((await service.read()).history.slice(-200).reverse())));
  app.post('/api/bosses',auth(),wrap(async(req,res)=>res.json(await service.action({id:req.body.id||req.body.name,action:'schedule',time:req.body.time,expectedVersion:req.body.expectedVersion,actor:req.actor}))));
- app.post('/api/bosses/:id/action',auth(),wrap(async(req,res)=>{if(!['cut','miss','schedule'].includes(req.body.action))return res.status(400).json({error:'컷·멍·예약만 허용됩니다'});res.json(await service.action({...req.body,id:req.params.id,actor:req.actor}));}));
+ app.post('/api/bosses/:id/action',auth(),wrap(async(req,res)=>{if(!['cut','miss','schedule'].includes(req.body.action))return res.status(400).json({error:'컷·멍·예약만 허용됩니다'});res.json(await service.action({id:req.params.id,action:req.body.action,time:req.body.time,expectedVersion:req.body.expectedVersion,actor:req.actor}));}));
  app.delete('/api/bosses/:name',auth(true),wrap(async(req,res)=>res.json(await service.action({id:req.params.name,action:'clear',actor:req.actor}))));
  app.patch('/api/bosses/:id',auth(true),wrap(async(req,res)=>res.json(await service.configure(req.params.id,req.body,req.actor))));
+ app.post('/api/admin/server-open',auth(true),wrap(async(req,res)=>{let time;try{if(typeof req.body.time!=='string'||!/^\d{4}$/.test(req.body.time))throw Error('시간 형식: HHMM (한국시간)');time=parseServerOpenKst(req.body.time);}catch(error){return res.status(400).json({error:error.message});}res.json(await service.serverOpen(time,req.actor));}));
  app.post('/api/admin/reset',auth(true),wrap(async(req,res)=>{if(req.body.confirm!=='RESET')return res.status(400).json({error:'confirm=RESET 확인 필요'});await service.reset(req.actor);res.json({ok:true});}));
  app.post('/api/admin/undo',auth(true),wrap(async(req,res)=>res.json(await service.undo(Number(req.body.eventId),req.actor))));
  app.get('/api/admin/backup',auth(true),wrap(async(_,res)=>{const s=await service.read();res.attachment(`boss-backup-${new Date().toISOString().slice(0,10)}.json`).json(s);}));

@@ -2,7 +2,7 @@ name: Verify and Build Android APK
 on:
   workflow_dispatch:
   push:
-    branches: [main, 'feat/**']
+    branches: [main, 'feat/**', 'integration/server-open-auto-miss-aliases']
   pull_request:
 permissions:
   contents: read
@@ -51,6 +51,21 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+      - name: Sync latest clan board into Android APK assets
+        run: |
+          set -eu
+          cp public/index.html app/src/main/assets/index.html
+          cp public/manifest.webmanifest app/src/main/assets/manifest.webmanifest
+          cp public/app.js app/src/main/assets/app.js
+          cp public/style.css app/src/main/assets/style.css
+          cp public/onestore-final.css app/src/main/assets/onestore-final.css
+          cp public/boss-icon.svg app/src/main/assets/boss-icon.svg
+          cmp public/index.html app/src/main/assets/index.html
+          cmp public/manifest.webmanifest app/src/main/assets/manifest.webmanifest
+          cmp public/app.js app/src/main/assets/app.js
+          cmp public/style.css app/src/main/assets/style.css
+          cmp public/onestore-final.css app/src/main/assets/onestore-final.css
+          cmp public/boss-icon.svg app/src/main/assets/boss-icon.svg
       - name: Build and lint
         run: gradle --no-daemon :app:lintDebug :app:assembleDebug
         env:
@@ -67,7 +82,7 @@ jobs:
           retention-days: 14
 
   release:
-    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && github.ref == 'refs/heads/main'
+    if: ((github.event_name == 'workflow_dispatch' || github.event_name == 'push') && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/integration/server-open-auto-miss-aliases')) || (github.event_name == 'pull_request' && github.head_ref == 'integration/server-open-auto-miss-aliases')
     needs: test
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -101,6 +116,21 @@ jobs:
           umask 077
           printf '%s' "$KEYSTORE" | base64 --decode > "$RUNNER_TEMP/release.keystore"
           test -s "$RUNNER_TEMP/release.keystore"
+      - name: Sync latest clan board into Android APK assets
+        run: |
+          set -eu
+          cp public/index.html app/src/main/assets/index.html
+          cp public/manifest.webmanifest app/src/main/assets/manifest.webmanifest
+          cp public/app.js app/src/main/assets/app.js
+          cp public/style.css app/src/main/assets/style.css
+          cp public/onestore-final.css app/src/main/assets/onestore-final.css
+          cp public/boss-icon.svg app/src/main/assets/boss-icon.svg
+          cmp public/index.html app/src/main/assets/index.html
+          cmp public/manifest.webmanifest app/src/main/assets/manifest.webmanifest
+          cmp public/app.js app/src/main/assets/app.js
+          cmp public/style.css app/src/main/assets/style.css
+          cmp public/onestore-final.css app/src/main/assets/onestore-final.css
+          cmp public/boss-icon.svg app/src/main/assets/boss-icon.svg
       - name: Build signed release APK
         env:
           ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/release.keystore
@@ -109,16 +139,40 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           BOSS_APP_URL: ${{ vars.BOSS_APP_URL || 'https://ami37pk16s.apps.bot-hosting.cloud' }}
         run: gradle --no-daemon :app:lintRelease :app:assembleRelease
+      - name: Verify bundled offline clan interface
+        shell: bash
+        run: |
+          APK=app/build/outputs/apk/release/app-release.apk
+          test -s "$APK"
+          for asset in index.html style.css onestore-final.css app.js boss-icon.svg manifest.webmanifest; do
+            test "$(unzip -p "$APK" "assets/$asset" | wc -c)" -gt 0 || { echo "::error::Missing or empty bundled asset: $asset"; exit 1; }
+          done
+          unzip -p "$APK" assets/index.html | grep -q 'bottom-nav' || { echo "::error::Bottom navigation missing from APK"; exit 1; }
+          unzip -p "$APK" assets/index.html | grep -q 'fixedSection' || { echo "::error::Fixed boss section missing from APK"; exit 1; }
+          unzip -p "$APK" assets/index.html | grep -q '5분 미확인 시 자동 멍 처리' || { echo "::error::APK does not contain the 5-minute auto-miss rule"; exit 1; }
+          for asset in index.html style.css onestore-final.css app.js boss-icon.svg manifest.webmanifest; do
+            cmp "public/$asset" <(unzip -p "$APK" "assets/$asset") || { echo "::error::Stale bundled APK asset: $asset"; exit 1; }
+          done
       - name: Verify APK signature and checksum
         run: |
           APK=app/build/outputs/apk/release/app-release.apk
           "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --verbose --print-certs "$APK"
           (cd app/build/outputs/apk/release && sha256sum app-release.apk > SHA256SUMS.txt)
+      - name: Record release APK provenance
+        shell: bash
+        run: |
+          set -eu
+          OUT=app/build/outputs/apk/release
+          printf 'source_commit=%s\nsource_ref=%s\nworkflow_run=%s\napk_bytes=%s\n' \
+            "$GITHUB_SHA" "$GITHUB_REF" "$GITHUB_RUN_ID" "$(wc -c < "$OUT/app-release.apk" | tr -d ' ')" \
+            > "$OUT/BUILD-INFO.txt"
+          cat "$OUT/SHA256SUMS.txt" >> "$OUT/BUILD-INFO.txt"
       - uses: actions/upload-artifact@v4
         with:
           name: LineageM-Boss-Alarm-signed-release-${{ github.sha }}
           path: |
             app/build/outputs/apk/release/app-release.apk
             app/build/outputs/apk/release/SHA256SUMS.txt
+            app/build/outputs/apk/release/BUILD-INFO.txt
           if-no-files-found: error
           retention-days: 14

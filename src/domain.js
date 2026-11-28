@@ -1,5 +1,5 @@
 import { CATALOG } from './catalog.js';
-export const GRACE = 30*60*1000;
+export const GRACE = 5*60*1000;
 export class DomainError extends Error { constructor(message,status=400){super(message);this.status=status;} }
 export function initialState(){return {schemaVersion:2,catalogVersion:2,revision:0,bosses:CATALOG.map(b=>({...b,time:null,misses:0,lastAction:null,version:0})),history:[],outbox:[]};}
 export function iso(value){
@@ -11,10 +11,11 @@ export function iso(value){
 }
 export function nextFixed(minutes,after){const day=86400000,kst=after+9*3600000,base=Math.floor(kst/day)*day-9*3600000;return Math.min(...minutes.map(m=>{let t=base+m*60000; if(t<=after)t+=day;return t;}));}
 export function nextSpawn(b,after){if(b.fixedKstMinutes.length)return nextFixed(b.fixedKstMinutes,after);if(b.intervalMinutes)return after+b.intervalMinutes*60000;throw new DomainError('리젠 시간 또는 고정 시간을 먼저 설정하세요');}
-export function findBoss(s,id){const b=s.bosses.find(b=>b.id===id||b.name===id);if(!b)throw new DomainError('보스를 찾을 수 없습니다',404);return b;}
+const BOSS_ALIASES = Object.freeze({'바포':'바포메트','산두':'산적두목','산적':'산적두목','아르':'아르피어','네크맨':'네크로맨서','암대':'암흑대장로','오르':'오르쿠스','감데':'감시자 데몬','리칸':'리칸트','피닉':'피닉스','가스트':'가스트','카스트':'가스트'});
+export function findBoss(s,id){const name=typeof id==='string'?id.trim().replace(/\s+/gu,' '):id;let b=s.bosses.find(b=>b.id===name||b.name===name);if(!b&&typeof name==='string'){const mapped=BOSS_ALIASES[name]||name;b=s.bosses.find(x=>x.name===mapped);if(!b&&name.length>=2){const matches=s.bosses.filter(x=>x.name.startsWith(name));if(matches.length===1)b=matches[0];else if(matches.length>1)throw new DomainError('약칭이 여러 보스와 겹칩니다. 이름을 더 길게 입력하세요');}}if(!b)throw new DomainError('보스를 찾을 수 없습니다',404);return b;}
 function event(s,b,action,actor,now,details={}){s.revision++;b.version++;const e={id:s.revision,bossId:b.id,name:b.name,action,actor,at:new Date(now).toISOString(),...details};s.history.push(e);s.history=s.history.slice(-1000);s.outbox.push({...e,bossSnapshot:{id:b.id,name:b.name,mapNumber:b.mapNumber,time:b.time,misses:b.misses,lastAction:b.lastAction,version:b.version},attempts:0});s.outbox=s.outbox.slice(-1000);return e;}
 export function advance(s,now=Date.now()){
- for(const b of s.bosses){if(!b.time||(!b.intervalMinutes&&!b.fixedKstMinutes.length))continue;
+ for(const b of s.bosses){if(b.id==='boss-21'||!b.time||(!b.intervalMinutes&&!b.fixedKstMinutes.length))continue;
  const due=Date.parse(b.time);if(now<due+GRACE)continue;
  let count=0,next=due;
  if(!b.fixedKstMinutes.length){count=Math.floor((now-due-GRACE)/(b.intervalMinutes*60000))+1;next=due+count*b.intervalMinutes*60000;}
@@ -26,7 +27,7 @@ export function advance(s,now=Date.now()){
  }return s;
 }
 export function act(s,{id,action,time,expectedVersion,actor='web'},now=Date.now()){
- const b=findBoss(s,id);if(expectedVersion!==undefined&&expectedVersion!==b.version)throw new DomainError('다른 사용자가 수정했습니다. 새로고침 후 다시 시도하세요',409);
+ const b=findBoss(s,id);if(b.id==='boss-21'&&['cut','miss','schedule'].includes(action))throw new DomainError('네크로맨서는 홀수 시간 안내 전용이며 컷·멍·예약을 사용하지 않습니다');if(expectedVersion!==undefined&&expectedVersion!==b.version)throw new DomainError('다른 사용자가 수정했습니다. 새로고침 후 다시 시도하세요',409);
  const at=time?Date.parse(iso(time)):now;if(at>now+60000&&(action==='cut'||action==='miss'))throw new DomainError('컷·멍은 미래 시간으로 기록할 수 없습니다');
  const previous={time:b.time,misses:b.misses,lastAction:b.lastAction};
  if(action==='schedule'){b.time=iso(time);b.misses=0;}
@@ -37,14 +38,14 @@ export function act(s,{id,action,time,expectedVersion,actor='web'},now=Date.now(
  b.lastAction=action;event(s,b,action,actor,now,{previous,time:b.time});return b;
 }
 export function configure(s,id,input,actor,now=Date.now()){
- const b=findBoss(s,id);const map=String(input.mapNumber??b.mapNumber).trim();if(map.length>80)throw new DomainError('맵 번호가 너무 깁니다');
+ const b=findBoss(s,id);if(b.id==='boss-21'&&(input.intervalMinutes!=null||Array.isArray(input.fixedKstMinutes)&&input.fixedKstMinutes.length))throw new DomainError('네크로맨서는 홀수 시간 안내 전용이며 리젠·고정시간을 설정할 수 없습니다');const map=String(input.mapNumber??b.mapNumber).trim();if(map.length>80)throw new DomainError('맵 번호가 너무 깁니다');
  const rawInterval=Object.hasOwn(input,'intervalMinutes')?input.intervalMinutes:b.intervalMinutes;
  const interval=rawInterval===null?null:Number(rawInterval);
  const fixed=input.fixedKstMinutes??b.fixedKstMinutes;
  if(interval!==null&&(!Number.isInteger(interval)||interval<1||interval>10080))throw new DomainError('리젠은 1~10080분');
  if(!Array.isArray(fixed)||fixed.length>24||fixed.some(x=>!Number.isInteger(x)||x<0||x>=1440)||new Set(fixed).size!==fixed.length)throw new DomainError('고정 시간은 중복 없는 0~1439분 목록');
  if(interval&&fixed.length)throw new DomainError('주기 리젠과 고정 시간 중 하나만 설정하세요');
- b.mapNumber=map;b.intervalMinutes=interval;b.fixedKstMinutes=[...fixed].sort((a,b)=>a-b);b.verified=input.verified===true;b.note=b.verified?'혈맹 관리자 확인':'관리자 확인 필요';event(s,b,'configure',actor,now);return b;
+ b.mapNumber=map;b.intervalMinutes=interval;b.fixedKstMinutes=[...fixed].sort((a,b)=>a-b);b.verified=Object.hasOwn(input,'verified')?input.verified===true:b.verified;b.note=b.verified?'혈맹 관리자 확인':'관리자 확인 필요';event(s,b,'configure',actor,now);return b;
 }
 export function reset(s,actor,now=Date.now()){for(const b of s.bosses){b.time=null;b.misses=0;b.lastAction='reset';event(s,b,'reset',actor,now);}return s;}
 // IDs are stable. A spelling correction retains schedules; replacing a different boss
@@ -52,8 +53,8 @@ export function reset(s,actor,now=Date.now()){for(const b of s.bosses){b.time=nu
 function normalizeCatalog(s){
  const changes=[];
  for(const b of s.bosses){
-  if(b.id==='boss-27'&&b.name==='가스트'){
-   const previous=structuredClone(b);b.name='카스트';changes.push({boss:b,previous,replaced:false});
+  if(b.id==='boss-27'&&b.name==='카스트'){
+   const previous=structuredClone(b);b.name='가스트';changes.push({boss:b,previous,replaced:false});
   }else if(b.id==='boss-21'&&b.name==='베리스'){
    const previous=structuredClone(b),base=CATALOG.find(x=>x.id===b.id);
    Object.assign(b,structuredClone(base),{time:null,misses:0,lastAction:'catalog-replaced'});
@@ -79,5 +80,71 @@ export function validateSnapshot(raw){
  result.bosses=normalized.bosses.map(x=>{const base=CATALOG.find(b=>b.id===x.id);if(!base||ids.has(x.id)||x.name!==base.name)throw new DomainError('보스 ID·이름 오류');ids.add(x.id);const temp=initialState();configure(temp,x.id,x,'validate');const configured=findBoss(temp,x.id);if(!Number.isSafeInteger(x.misses)||x.misses<0)throw new DomainError('멍 횟수 오류');return {...base,...configured,time:x.time===null?null:iso(x.time),misses:x.misses,lastAction:'restore',version:0};});return result;
 }
 export function restore(s,raw,actor,now=Date.now()){const clean=validateSnapshot(raw);for(const b of clean.bosses){const old=findBoss(s,b.id);Object.assign(old,{...b,version:old.version});event(s,old,'restore',actor,now);}return s;}
-export function migrateLegacy(rows){const s=initialState();if(!Array.isArray(rows))throw new DomainError('기존 보스 배열 필요');for(const row of rows){const b=s.bosses.find(b=>b.name===(row.name==='가스트'?'카스트':row.name));if(!b)throw new DomainError(`기준표에 없는 기존 보스: ${String(row.name).slice(0,60)} (원본을 보존하고 관리자 매핑 필요)`);b.time=iso(row.time);}return s;}
-export function undo(s,eventId,actor,now=Date.now()){const e=s.history.find(e=>e.id===eventId);if(!e?.previous)throw new DomainError('복구 가능한 컷·멍·등록 기록을 선택하세요');const b=findBoss(s,e.bossId);if(e.name!==b.name&&!(e.name==='가스트'&&b.name==='카스트'))throw new DomainError('보스표가 변경된 기록은 바로 복구할 수 없습니다. 원본 백업을 확인하세요',409);const later=s.history.some(x=>x.bossId===b.id&&x.id>e.id);if(later)throw new DomainError('후속 기록이 있어 바로 복구할 수 없습니다. 백업을 확인하세요',409);Object.assign(b,e.previous);event(s,b,'undo',actor,now,{restoredEvent:e.id});return b;}
+export function migrateLegacy(rows){const s=initialState();if(!Array.isArray(rows))throw new DomainError('기존 보스 배열 필요');for(const row of rows){const b=s.bosses.find(b=>b.name===(row.name==='카스트'?'가스트':row.name));if(!b)throw new DomainError(`기준표에 없는 기존 보스: ${String(row.name).slice(0,60)} (원본을 보존하고 관리자 매핑 필요)`);b.time=iso(row.time);}return s;}
+export function undo(s,eventId,actor,now=Date.now()){const e=s.history.find(e=>e.id===eventId);if(e?.action==='server-open')return undoServerOpen(s,e,actor,now);if(!e?.previous)throw new DomainError('복구 가능한 컷·멍·등록 기록을 선택하세요');const b=findBoss(s,e.bossId);if(e.name!==b.name&&!(e.name==='카스트'&&b.name==='가스트'))throw new DomainError('보스표가 변경된 기록은 바로 복구할 수 없습니다. 원본 백업을 확인하세요',409);const later=s.history.some(x=>x.bossId===b.id&&x.id>e.id);if(later)throw new DomainError('후속 기록이 있어 바로 복구할 수 없습니다. 백업을 확인하세요',409);Object.assign(b,e.previous);event(s,b,'undo',actor,now,{restoredEvent:e.id});return b;}
+
+export function serverOpenPlan(s,openTime,now=Date.now()){
+ const opened=Date.parse(iso(openTime));
+ if(opened>now+60000)throw new DomainError('서버오픈 시간은 미래일 수 없습니다');
+ const updated=s.bosses.filter(b=>b.id!=='boss-21'&&!b.fixedKstMinutes?.length&&b.intervalMinutes).map(b=>({
+  id:b.id,name:b.name,previousTime:b.time,time:new Date(opened+b.intervalMinutes*60000).toISOString()
+ }));
+ if(!updated.length)throw new DomainError('변경할 일반 보스가 없습니다');
+ return {openTime:new Date(opened).toISOString(),updated};
+}
+export function serverOpen(s,openTime,actor,now=Date.now()){
+ const plan=serverOpenPlan(s,openTime,now);
+ const prior=s.history.find(e=>e.action==='server-open'&&e.openTime===plan.openTime&&!e.undoneAt);
+ if(prior)return {eventId:prior.id,openTime:plan.openTime,updated:prior.updated,duplicate:true};
+ const affected=new Set(plan.updated.map(b=>b.id));
+ const previous=s.bosses.filter(b=>affected.has(b.id)).map(b=>({
+  id:b.id,time:b.time,misses:b.misses,lastAction:b.lastAction,version:b.version
+ }));
+ const previousAlarmKeys=(s.alarmKeys||[]).filter(k=>[...affected].some(id=>k.startsWith('alarm-'+id+'-')));
+ const supersededAlarmIds=[];
+ for(const e of s.outbox){
+  if(!e.sentAt&&affected.has(e.bossId)&&String(e.id).startsWith('alarm-')){
+   e.sentAt='superseded';supersededAlarmIds.push(e.id);
+  }
+ }
+ s.alarmKeys=(s.alarmKeys||[]).filter(k=>![...affected].some(id=>k.startsWith('alarm-'+id+'-')));
+ for(const change of plan.updated){
+  const b=findBoss(s,change.id);b.time=change.time;b.misses=0;b.lastAction='server-open';b.version++;
+ }
+ s.revision++;
+ const eventId=s.revision;
+ s.history.push({id:eventId,action:'server-open',actor,at:new Date(now).toISOString(),
+  openTime:plan.openTime,previous,updated:plan.updated,previousAlarmKeys,supersededAlarmIds});
+ s.history=s.history.slice(-1000);
+ return {...plan,eventId,duplicate:false};
+}
+function undoServerOpen(s,e,actor,now){
+ if(e.undoneAt)throw new DomainError('이미 되돌린 서버오픈 기록입니다',409);
+ for(const previous of e.previous){
+  const b=findBoss(s,previous.id);
+  if(b.version!==previous.version+1||s.history.some(x=>x.id>e.id&&x.bossId===b.id))
+   throw new DomainError('후속 보스 변경이 있어 서버오픈을 되돌릴 수 없습니다. 백업을 확인하세요',409);
+ }
+ const affected=new Set(e.previous.map(b=>b.id));
+ for(const previous of e.previous){
+  const b=findBoss(s,previous.id);
+  b.time=previous.time;b.misses=previous.misses;b.lastAction=previous.lastAction;b.version++;
+ }
+ for(const pending of s.outbox){
+  if(!affected.has(pending.bossId)||!String(pending.id).startsWith('alarm-'))continue;
+  if(e.supersededAlarmIds.includes(pending.id)&&pending.sentAt==='superseded'){
+   if(now-Date.parse(pending.at)<=90000)delete pending.sentAt;
+  }else if(!pending.sentAt&&e.updated.some(b=>b.id===pending.bossId&&b.time===pending.time)){
+   pending.sentAt='superseded';
+  }
+ }
+ s.alarmKeys=(s.alarmKeys||[]).filter(k=>![...affected].some(id=>k.startsWith('alarm-'+id+'-')));
+ s.alarmKeys.push(...e.previousAlarmKeys);
+ s.alarmKeys=s.alarmKeys.slice(-1000);
+ s.revision++;
+ e.undoneAt=new Date(now).toISOString();e.undoEventId=s.revision;
+ s.history.push({id:s.revision,action:'server-open-undo',actor,at:e.undoneAt,restoredEvent:e.id,
+  affectedBossIds:[...affected]});
+ s.history=s.history.slice(-1000);
+ return {restoredEvent:e.id,restoredBosses:affected.size};
+}
